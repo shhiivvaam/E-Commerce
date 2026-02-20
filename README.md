@@ -24,7 +24,7 @@ Create `.env` files in both `apps/web` and `apps/api`. A default backend `.env` 
 
 #### Backend (`apps/api/.env`)
 
-```
+```env
 DATABASE_URL="postgresql://ecommerce_user:ecommerce_password@localhost:5432/ecommerce_db?schema=public"
 JWT_SECRET="supers3cr3tjwt"
 REDIS_URL="redis://localhost:6379" // For future caching
