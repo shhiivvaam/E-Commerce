@@ -9,17 +9,17 @@ export class OrdersController {
     constructor(private readonly ordersService: OrdersService) { }
 
     @Post()
-    create(@Request() req, @Body() createOrderDto: any) {
+    create(@Request() req: any, @Body() createOrderDto: any) {
         return this.ordersService.create(req.user.userId || req.user.id, createOrderDto);
     }
 
     @Get()
-    findAll(@Request() req) {
+    findAll(@Request() req: any) {
         return this.ordersService.findAllByUser(req.user.userId || req.user.id);
     }
 
     @Get(':id')
-    findOne(@Request() req, @Param('id') id: string) {
+    findOne(@Request() req: any, @Param('id') id: string) {
         return this.ordersService.findOne(id, req.user.userId || req.user.id);
     }
 

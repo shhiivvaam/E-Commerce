@@ -17,7 +17,7 @@ export class OrdersService {
                 shippingAmount: data.shippingAmount || 0,
                 addressId: data.addressId,
                 items: {
-                    create: data.items.map(item => ({
+                    create: data.items.map((item: any) => ({
                         productId: item.productId,
                         variantId: item.variantId,
                         quantity: item.quantity,
