@@ -1,22 +1,68 @@
-import { Controller, Post, Body, Req, Headers, BadRequestException, UseGuards } from '@nestjs/common';
+import {
+    Controller,
+    Post,
+    Body,
+    Req,
+    Headers,
+    BadRequestException,
+    UseGuards,
+} from '@nestjs/common';
+import {
+    ApiTags,
+    ApiOperation,
+    ApiBody,
+    ApiResponse,
+    ApiBearerAuth,
+    ApiHeader,
+    ApiUnauthorizedResponse,
+    ApiBadRequestResponse,
+} from '@nestjs/swagger';
 import { PaymentsService } from './payments.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { CreateCheckoutSessionDto, CheckoutSessionResponseDto } from './dto/payment.dto';
 
+@ApiTags('Payments')
 @Controller('payments')
 export class PaymentsController {
     constructor(private readonly paymentsService: PaymentsService) { }
 
     @UseGuards(JwtAuthGuard)
     @Post('checkout')
-    async createCheckoutSession(@Body() body: { orderId: string, items: any[], successUrl: string, cancelUrl: string }) {
-        return this.paymentsService.createCheckoutSession(body.orderId, body.items, body.successUrl, body.cancelUrl);
+    @ApiBearerAuth()
+    @ApiOperation({
+        summary: 'Create a Stripe checkout session',
+        description: 'Initiates a Stripe checkout session for the given order. Returns a redirect URL to the Stripe-hosted payment page.',
+    })
+    @ApiBody({ type: CreateCheckoutSessionDto })
+    @ApiResponse({ status: 201, description: 'Checkout session created', type: CheckoutSessionResponseDto })
+    @ApiUnauthorizedResponse({ description: 'JWT token is missing or invalid' })
+    async createCheckoutSession(@Body() body: CreateCheckoutSessionDto) {
+        return this.paymentsService.createCheckoutSession(
+            body.orderId,
+            body.items,
+            body.successUrl,
+            body.cancelUrl,
+        );
     }
 
     @Post('webhook')
-    async handleStripeWebhook(@Req() req: any, @Headers('stripe-signature') signature: string) {
+    @ApiOperation({
+        summary: 'Stripe webhook handler',
+        description: 'Endpoint for Stripe to send payment event webhooks. Do NOT call this manually — it requires a valid Stripe signature header.',
+    })
+    @ApiHeader({
+        name: 'stripe-signature',
+        description: 'Stripe webhook signature (automatically sent by Stripe)',
+        required: true,
+    })
+    @ApiResponse({ status: 200, description: 'Webhook received', schema: { example: { received: true } } })
+    @ApiBadRequestResponse({ description: 'Invalid Stripe webhook signature' })
+    async handleStripeWebhook(
+        @Req() req: any,
+        @Headers('stripe-signature') signature: string,
+    ) {
         let event;
         try {
-            // Using internal raw body parser hook if configured, or fallback 
             const rawBody = req.rawBody || req.body;
             event = await this.paymentsService.constructEvent(rawBody, signature);
         } catch (err: any) {
