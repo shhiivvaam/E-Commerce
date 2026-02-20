@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { User, ShoppingBag, MapPin, Heart, Bell, Shield, LogOut } from "lucide-react";
+import { User, ShoppingBag, MapPin, Heart, Bell, LogOut } from "lucide-react";
 import { useAuthStore } from "@/store/useAuthStore";
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
@@ -48,8 +48,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                                     key={item.href}
                                     href={item.href}
                                     className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${isActive
-                                            ? "bg-primary text-primary-foreground"
-                                            : "hover:bg-muted text-muted-foreground hover:text-foreground"
+                                        ? "bg-primary text-primary-foreground"
+                                        : "hover:bg-muted text-muted-foreground hover:text-foreground"
                                         }`}
                                 >
                                     <item.icon className="h-5 w-5" />

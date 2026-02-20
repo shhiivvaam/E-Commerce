@@ -7,7 +7,7 @@ import { ShoppingCart, User, LogOut } from "lucide-react";
 import { Button } from "./ui/button";
 
 export function Navbar() {
-    const { user, isAuthenticated, logout } = useAuthStore();
+    const { isAuthenticated, logout } = useAuthStore();
     const cartItems = useCartStore((state) => state.items);
     const cartCount = cartItems.reduce((acc, item) => acc + item.quantity, 0);
 

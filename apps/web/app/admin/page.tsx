@@ -15,7 +15,7 @@ export default function AdminOverview() {
         <div className="space-y-8">
             <div>
                 <h2 className="text-3xl font-bold tracking-tight">Dashboard Overview</h2>
-                <p className="text-muted-foreground mt-2">Welcome back. Here's what's happening with your store today.</p>
+                <p className="text-muted-foreground mt-2">Welcome back. Here&apos;s what&apos;s happening with your store today.</p>
             </div>
 
             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
