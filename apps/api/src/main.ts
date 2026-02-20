@@ -1,8 +1,35 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
+import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import helmet from 'helmet';
+import * as cookieParser from 'cookie-parser';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
-  await app.listen(process.env.PORT ?? 3000);
+
+  // Security
+  app.use(helmet());
+  app.enableCors({
+    origin: '*', // Adjust for production
+    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
+    credentials: true,
+  });
+  app.use(cookieParser());
+
+  // Global prefixes
+  app.setGlobalPrefix('api');
+
+  // Swagger Documentation
+  const config = new DocumentBuilder()
+    .setTitle('E-Commerce API')
+    .setDescription('Full-stack Modern E-Commerce Platform API')
+    .setVersion('1.0')
+    .addBearerAuth()
+    .build();
+
+  const document = SwaggerModule.createDocument(app, config);
+  SwaggerModule.setup('api/docs', app, document);
+
+  await app.listen(process.env.PORT || 3001);
 }
 bootstrap();
