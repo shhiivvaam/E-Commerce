@@ -24,6 +24,9 @@ RUN npx prisma generate
 # Compile TypeScript → dist/
 RUN npm run build
 
+# Verify the build actually produced output (fail fast if dist is empty)
+RUN ls -la dist/ && test -f dist/main.js
+
 # ─────────────────────────────────────────────────────────────
 # Stage 2: Production runtime
 # ─────────────────────────────────────────────────────────────
@@ -57,4 +60,6 @@ EXPOSE 3001
 ENTRYPOINT ["/sbin/tini", "--"]
 
 # Run prisma migrate deploy then start the app
-CMD ["sh", "-c", "npx prisma migrate deploy && node dist/main"]
+# NOTE: migrations are handled by deploy.sh in a dedicated temp container
+# before this container ever starts — so we just start the app directly.
+CMD ["node", "dist/main.js"]

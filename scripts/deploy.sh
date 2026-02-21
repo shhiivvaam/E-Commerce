@@ -111,7 +111,7 @@ if ! docker run --rm \
   --env-file "${ENV_FILE}" \
   -e NODE_ENV=production \
   "${FULL_IMAGE}" \
-  sh -c "npx prisma migrate deploy"; then
+  npx prisma migrate deploy; then
   log_error "Migrations FAILED — aborting deployment. Old container is still live."
   exit 1
 fi
