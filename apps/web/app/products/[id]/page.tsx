@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useCartStore } from "@/store/useCartStore";
 import { Button } from "@/components/ui/button";
+import Image from "next/image";
 import { ShoppingCart, Star, ShieldCheck, Truck, ArrowLeft } from "lucide-react";
 import Link from "next/link";
 
@@ -35,7 +36,7 @@ export default function ProductDetailPage({ params }: { params: { id: string } }
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-12 lg:gap-20">
                 <div className="aspect-square bg-muted rounded-2xl overflow-hidden relative">
-                    <img src={product.image} alt={product.title} className="object-cover w-full h-full" />
+                    <Image src={product.image} alt={product.title} fill unoptimized className="object-cover" />
                 </div>
 
                 <div className="flex flex-col justify-center">

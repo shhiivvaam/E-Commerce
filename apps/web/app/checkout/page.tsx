@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { motion, AnimatePresence } from "framer-motion";
 import { CheckCircle2, CreditCard, MapPin, Package, Lock } from "lucide-react";
 import Link from "next/link";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 
 const steps = [
@@ -128,8 +129,8 @@ export default function CheckoutPage() {
                                 {items.map(item => (
                                     <div key={item.id} className="flex justify-between py-2 items-center">
                                         <div className="flex items-center gap-4">
-                                            <div className="h-12 w-12 bg-muted rounded overflow-hidden">
-                                                <img src={item.image} alt={item.title} className="w-full h-full object-cover" />
+                                            <div className="relative h-12 w-12 bg-muted rounded overflow-hidden">
+                                                <Image src={item.image ?? ''} alt={item.title} fill unoptimized className="object-cover" />
                                             </div>
                                             <div>
                                                 <p className="font-medium line-clamp-1">{item.title}</p>

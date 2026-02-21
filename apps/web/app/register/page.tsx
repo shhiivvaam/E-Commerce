@@ -11,6 +11,7 @@ import Link from "next/link";
 import { motion } from "framer-motion";
 import { api } from "@/lib/api";
 import { toast } from "react-hot-toast";
+import { isAxiosError } from "axios";
 
 const formSchema = z.object({
     name: z.string().min(2, "Name must be at least 2 characters"),
@@ -32,9 +33,12 @@ export default function RegisterPage() {
             login(data.user, data.access_token);
             toast.success("Account created successfully!");
             router.push("/");
-        } catch (error: any) {
+        } catch (error) {
             console.error(error);
-            toast.error(error.response?.data?.message || "Registration failed. Try a different email.");
+            const message = isAxiosError(error)
+                ? error.response?.data?.message
+                : undefined;
+            toast.error(message || "Registration failed. Try a different email.");
         }
     };
 

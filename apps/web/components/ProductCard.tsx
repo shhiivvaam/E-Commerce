@@ -2,6 +2,7 @@
 
 import { motion } from "framer-motion";
 import Link from "next/link";
+import Image from "next/image";
 import { ShoppingCart } from "lucide-react";
 import { Button } from "./ui/button";
 import { useCartStore } from "@/store/useCartStore";
@@ -41,10 +42,12 @@ export function ProductCard({ product }: ProductCardProps) {
         >
             <Link href={`/products/${product.id}`} className="block block-aspect-w-1 block-aspect-h-1 relative">
                 <div className="relative h-64 w-full overflow-hidden bg-muted/50 rounded-t-2xl">
-                    <img
+                    <Image
                         src={product.image}
                         alt={product.title}
-                        className="h-full w-full object-cover object-center transition-transform duration-300 group-hover:scale-105"
+                        fill
+                        unoptimized
+                        className="object-cover object-center transition-transform duration-300 group-hover:scale-105"
                     />
                 </div>
                 <div className="p-5">

@@ -4,6 +4,7 @@ import { useCartStore } from "@/store/useCartStore";
 import { Button } from "@/components/ui/button";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
+import Image from "next/image";
 import { Trash2, ArrowRight } from "lucide-react";
 
 export default function CartPage() {
@@ -36,8 +37,8 @@ export default function CartPage() {
                                 exit={{ opacity: 0, scale: 0.9 }}
                                 className="flex items-center gap-6 p-4 rounded-xl border bg-card"
                             >
-                                <div className="h-24 w-24 flex-shrink-0 overflow-hidden rounded-md bg-muted">
-                                    <img src={item.image} alt={item.title} className="h-full w-full object-cover" />
+                                <div className="relative h-24 w-24 flex-shrink-0 overflow-hidden rounded-md bg-muted">
+                                    <Image src={item.image ?? ''} alt={item.title} fill unoptimized className="object-cover" />
                                 </div>
                                 <div className="flex-1 min-w-0">
                                     <Link href={`/products/${item.productId}`} className="text-lg font-medium hover:underline block truncate">

@@ -11,6 +11,7 @@ import Link from "next/link";
 import { motion } from "framer-motion";
 import { api } from "@/lib/api";
 import { toast } from "react-hot-toast";
+import { isAxiosError } from "axios";
 
 const formSchema = z.object({
     email: z.string().email("Invalid email address"),
@@ -31,9 +32,12 @@ export default function LoginPage() {
             login(data.user, data.access_token);
             toast.success("Successfully logged in!");
             router.push("/");
-        } catch (error: any) {
+        } catch (error) {
             console.error(error);
-            toast.error(error.response?.data?.message || "Login failed. Please check your credentials.");
+            const message = isAxiosError(error)
+                ? error.response?.data?.message
+                : undefined;
+            toast.error(message || "Login failed. Please check your credentials.");
         }
     };
 
