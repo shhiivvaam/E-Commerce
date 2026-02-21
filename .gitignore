@@ -1,4 +1,18 @@
 node_modules
+dist
+*.pem
+*.pem*
+# Secrets — never commit real env files
 .env
-.env*
-package-lock.json
+.env.local
+.env.*.local
+.env.production
+.env.staging
+
+# The .example file IS safe to commit (contains no real secrets)
+!.env.production.example
+
+# Misc
+*.log
+coverage
+.DS_Store

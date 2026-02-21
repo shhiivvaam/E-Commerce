@@ -9,8 +9,12 @@ async function bootstrap() {
 
   // Security
   app.use(helmet());
+
+  const isProduction = process.env.NODE_ENV === 'production';
+  const allowedOrigin = process.env.FRONTEND_URL || '*';
+
   app.enableCors({
-    origin: '*', // Adjust for production
+    origin: isProduction ? allowedOrigin : '*',
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
     credentials: true,
   });

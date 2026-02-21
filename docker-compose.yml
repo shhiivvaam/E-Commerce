@@ -1,12 +1,74 @@
 version: '3.8'
 
-# PostgreSQL is hosted on Neon:
-#   postgresql://neondb_owner:***@ep-broad-shape-aio3pb8w-pooler.c-4.us-east-1.aws.neon.tech/neondb
-#   sslmode=require&channel_binding=require
+# ─────────────────────────────────────────────────────────────
+# Production docker-compose for the NestJS API
 #
-# Redis is hosted on Upstash:
-#   rediss://default:***@natural-crow-13572.upstash.io:6379
+# Image pulled from Docker Hub on every CI/CD deploy.
+# Set DOCKERHUB_USERNAME in your EC2 /opt/ecommerce/.env
 #
-# No local postgres/redis containers needed.
+# External services (no local containers needed):
+#   • PostgreSQL → Neon (cloud)
+#   • Redis      → Upstash (cloud)
+#
+# Usage (first time / manual):
+#   docker compose --env-file .env up -d
+# ─────────────────────────────────────────────────────────────
 
-services: {}
+services:
+  api:
+    # CI/CD pipeline updates this image tag automatically on every push to main
+    image: ${DOCKERHUB_USERNAME}/ecommerce-api:latest
+    container_name: ecommerce-api
+    restart: unless-stopped
+
+    ports:
+      - "3001:3001"
+
+    environment:
+      NODE_ENV: production
+      PORT: 3001
+
+      # ── Secrets – loaded from /opt/ecommerce/.env on EC2 ──────────
+      DATABASE_URL: ${DATABASE_URL}
+      REDIS_URL: ${REDIS_URL}
+      JWT_SECRET: ${JWT_SECRET}
+
+      # ── AWS S3 (for file uploads) ──────────────────────────────────
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID:-}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY:-}
+      AWS_S3_BUCKET: ${AWS_S3_BUCKET:-}
+      AWS_REGION: ${AWS_REGION:-us-east-1}
+
+      # ── Stripe ────────────────────────────────────────────────────
+      STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY:-}
+      STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET:-}
+
+      # ── SMTP / Email ──────────────────────────────────────────────
+      SMTP_HOST: ${SMTP_HOST:-}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASS: ${SMTP_PASS:-}
+
+      # ── CORS / Frontend ───────────────────────────────────────────
+      FRONTEND_URL: ${FRONTEND_URL:-https://your-vercel-domain.vercel.app}
+
+    healthcheck:
+      test: [ "CMD", "wget", "--quiet", "--spider", "http://localhost:3001/api" ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+    cap_drop:
+      - ALL
+    cap_add:
+      - NET_BIND_SERVICE
+
+    security_opt:
+      - no-new-privileges:true
