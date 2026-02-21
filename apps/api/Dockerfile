@@ -24,8 +24,8 @@ RUN npx prisma generate
 # Compile TypeScript → dist/
 RUN npm run build
 
-# Verify the build actually produced output (fail fast if dist is empty)
-RUN ls -la dist/ && test -f dist/main.js
+# Verify the build produced dist/main.js (fail fast with clear output if not)
+RUN echo "=== dist/ contents ==" && find dist -type f -name '*.js' | head -20 && test -f dist/main.js
 
 # ─────────────────────────────────────────────────────────────
 # Stage 2: Production runtime
