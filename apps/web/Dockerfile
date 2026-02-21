@@ -43,10 +43,16 @@ ENV PORT=3000
 # Create non-root user
 RUN addgroup -S appgroup && adduser -S appuser -G appgroup
 
+# Pre-create public dir so the COPY never fails even if public/ is empty
+RUN mkdir -p ./public ./.next/static
+
 # Copy only what Next.js standalone needs
-COPY --from=builder --chown=appuser:appgroup /app/public            ./public
 COPY --from=builder --chown=appuser:appgroup /app/.next/standalone  ./
 COPY --from=builder --chown=appuser:appgroup /app/.next/static      ./.next/static
+# public/ is optional — copy only if it exists in builder
+RUN true  # layer separator
+COPY --from=builder --chown=appuser:appgroup /app/public/. ./public/
+
 
 USER appuser
 
