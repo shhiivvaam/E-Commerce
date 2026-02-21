@@ -17,8 +17,17 @@ on:
   push:
     branches: [main]
     paths:
+      # ── Frontend source ─────────────────────────────────────────
       - 'apps/web/**'
+      # ── Shared packages (affects both apps) ────────────────────
+      - 'packages/**'
+      # ── Root dependency files (lockfile change = rebuild) ───────
+      - 'package.json'
+      - 'package-lock.json'
+      # ── This workflow itself ────────────────────────────────────
       - '.github/workflows/deploy-web.yml'
+      # ── Explicitly IGNORE backend-only changes ──────────────────
+      - '!apps/api/**'
 
 env:
   IMAGE: ${{ secrets.DOCKERHUB_USERNAME }}/ecommerce-web

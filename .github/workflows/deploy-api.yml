@@ -4,17 +4,29 @@ on:
   push:
     branches: [main]
     paths:
+      # ── Backend source ─────────────────────────────────────────
       - 'apps/api/**'
+      # ── Shared packages (affects both apps) ────────────────────
+      - 'packages/**'
+      # ── Root dependency files (lockfile change = rebuild) ───────
+      - 'package.json'
+      - 'package-lock.json'
+      # ── Infra files this service needs ─────────────────────────
       - 'docker-compose.yml'
+      - 'scripts/deploy.sh'
+      - 'scripts/ec2-setup.sh'
+      # ── This workflow itself ────────────────────────────────────
       - '.github/workflows/deploy-api.yml'
+      # ── Explicitly IGNORE frontend-only changes ─────────────────
+      - '!apps/web/**'
 
 env:
-  # Docker Hub image — change YOUR_DOCKERHUB_USERNAME to your actual username
   IMAGE: ${{ secrets.DOCKERHUB_USERNAME }}/ecommerce-api
 
 jobs:
   # ─────────────────────────────────────────────────────────────
-  # Job 1: Build the Docker image and push it to Docker Hub
+  # Job 1: Build & push to Docker Hub
+  # Only runs if paths above changed. If this fails, Job 2 never runs.
   # ─────────────────────────────────────────────────────────────
   build-and-push:
     name: Build & Push to Docker Hub
@@ -52,12 +64,13 @@ jobs:
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
-          # Re-use GitHub Actions layer cache for faster builds
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
   # ─────────────────────────────────────────────────────────────
-  # Job 2: SSH into EC2 → pull new image → zero-downtime restart
+  # Job 2: Deploy to EC2
+  # Only runs after Job 1 succeeds — image is guaranteed to exist.
+  # Uses deploy.sh for zero-downtime blue-green + auto-rollback.
   # ─────────────────────────────────────────────────────────────
   deploy:
     name: Deploy to EC2
@@ -69,30 +82,37 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Deploy via SSH
+      # ── Upload the deploy script to EC2 ──────────────────────
+      - name: Upload deploy.sh to EC2
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          port: 22
+          source: scripts/deploy.sh
+          target: ~/ecommerce/
+          strip_components: 1           # drops the "scripts/" prefix
+
+      # ── Run zero-downtime deploy with auto-rollback ───────────
+      - name: Run deploy.sh on EC2
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.EC2_HOST }}
           username: ${{ secrets.EC2_USER }}
           key: ${{ secrets.EC2_SSH_KEY }}
           port: 22
+          command_timeout: 3m
           script: |
-            set -e
+            chmod +x ~/ecommerce/deploy.sh
+            bash ~/ecommerce/deploy.sh "${{ env.IMAGE }}" "latest"
 
-            # ── Pull the latest image from Docker Hub ─────────────
-            docker pull ${{ env.IMAGE }}:latest
-
-            # ── Navigate to deployment directory ──────────────────
-            cd ~/ecommerce
-
-            # ── Update image reference in compose file ─────────────
-            sed -i "s|image:.*ecommerce-api.*|image: ${{ env.IMAGE }}:latest|g" docker-compose.yml
-
-            # ── Restart service (zero-downtime: pull then up) ──────
-            docker compose pull api
-            docker compose up -d --remove-orphans api
-
-            # ── Remove dangling images to save disk space ──────────
-            docker image prune -f
-
-            echo "✅ Deployment complete — $(date)"
+      - name: Summary
+        run: |
+          echo "## ✅ API Deployed to EC2" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Field | Value |" >> $GITHUB_STEP_SUMMARY
+          echo "|-------|-------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Image | \`${{ env.IMAGE }}:latest\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| Host  | \`${{ secrets.EC2_HOST }}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| Time  | $(date -u) |" >> $GITHUB_STEP_SUMMARY

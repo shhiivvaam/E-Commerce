@@ -1,6 +1,6 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-    // required for Docker images
+    // Required for minimal Docker images
     output: 'standalone',
 };
 
