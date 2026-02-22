@@ -75,13 +75,15 @@ fi
 log_success "Pre-flight checks passed"
 
 # ─────────────────────────────────────────────────────────────────────────────
-# 1. Pre-cleanup (only stopped containers + dangling images)
-#    Running containers are preserved for rollback safety
+# 1. Pre-cleanup
+#    • Stopped containers  → removed (running containers are untouched)
+#    • Unused images >7d   → removed (-a = all tagged+untagged, images used
+#                            by running containers are protected by Docker)
 # ─────────────────────────────────────────────────────────────────────────────
-log_info "[1/7] Pre-deploy cleanup (stopped containers + dangling images)..."
+log_info "[1/7] Pre-deploy cleanup..."
 
-docker container prune -f >/dev/null 2>&1 || true
-docker image prune -f     >/dev/null 2>&1 || true
+docker container prune -f                          >/dev/null 2>&1 || true
+docker image prune -af --filter "until=168h"       >/dev/null 2>&1 || true
 
 log_success "Cleanup done"
 
@@ -131,8 +133,15 @@ docker run -d \
   --env-file "${ENV_FILE}" \
   -e NODE_ENV=production \
   -e PORT="${APP_PORT}" \
-  -p "${SHADOW_PORT}:${APP_PORT}" \
+  -p "127.0.0.1:${SHADOW_PORT}:${APP_PORT}" \
   --restart no \
+  --cap-drop ALL \
+  --cap-add  NET_BIND_SERVICE \
+  --security-opt no-new-privileges:true \
+  --memory=512m \
+  --memory-reservation=256m \
+  --cpus="1.0" \
+  --pids-limit=200 \
   "${FULL_IMAGE}"
 
 log_success "Shadow container started"
@@ -186,8 +195,20 @@ docker run -d \
   --env-file "${ENV_FILE}" \
   -e NODE_ENV=production \
   -e PORT="${APP_PORT}" \
-  -p "${APP_PORT}:${APP_PORT}" \
+  -p "127.0.0.1:${APP_PORT}:${APP_PORT}" \
   --restart unless-stopped \
+  --cap-drop ALL \
+  --cap-add  NET_BIND_SERVICE \
+  --security-opt no-new-privileges:true \
+  --memory=512m \
+  --memory-reservation=256m \
+  --cpus="1.0" \
+  --pids-limit=200 \
+  --health-cmd="wget --quiet --spider http://localhost:${APP_PORT}/health || exit 1" \
+  --health-interval=30s \
+  --health-timeout=10s \
+  --health-retries=3 \
+  --health-start-period=40s \
   --log-driver json-file \
   --log-opt max-size=10m \
   --log-opt max-file=3 \
@@ -198,8 +219,7 @@ log_success "New container is live on port ${APP_PORT}"
 # ─────────────────────────────────────────────────────────────────────────────
 # 7. Final cleanup
 # ─────────────────────────────────────────────────────────────────────────────
-log_info "[7/7] Cleaning up old images..."
-docker image prune -f >/dev/null 2>&1 || true
+# image cleanup already done in step 1 (age-based prune)
 
 # ─────────────────────────────────────────────────────────────────────────────
 echo ""
