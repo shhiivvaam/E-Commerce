@@ -20,16 +20,10 @@ async function bootstrap() {
   });
   app.use(cookieParser());
 
-  // ── Health check endpoint (MUST be before setGlobalPrefix) ──────────────
-  // Lives at GET /health — not /api/health — so it's always reachable
-  // Used by: deploy.sh blue-green check, Docker HEALTHCHECK, uptime monitors
-  const httpAdapter = app.getHttpAdapter();
-  httpAdapter.get('/health', (_req: any, res: any) => {
-    res.status(200).json({ status: 'ok', timestamp: new Date().toISOString() });
-  });
+  // Global prefix — /health is excluded so it stays at root (not /api/health)
+  // This is the proper NestJS way vs using httpAdapter.get() directly
+  app.setGlobalPrefix('api', { exclude: ['health'] });
 
-  // Global prefixes
-  app.setGlobalPrefix('api');
 
   // Swagger Documentation
   const config = new DocumentBuilder()
