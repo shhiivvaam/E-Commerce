@@ -82,6 +82,11 @@ sudo systemctl start  nginx
 
 log_success "Nginx installed"
 
+# Ubuntu's default nginx.conf includes 'gzip on;' in the http{} block.
+# Our conf.d/ecommerce-global.conf also sets gzip inside http{} → duplicate error.
+# Comment it out so all gzip config lives exclusively in our conf.d file.
+sudo sed -i 's/^\(\s*gzip on;\)/# \1  # managed by ecommerce-global.conf/' /etc/nginx/nginx.conf
+
 # ─────────────────────────────────────────────────────────────────────────────
 # 2. http-level config (WebSocket map, rate limiting, gzip, HSTS map)
 #    These directives must live in the http{} block, not a server{} block.
@@ -157,7 +162,7 @@ server {
 
     # HSTS — only sent on HTTPS (empty string on HTTP = header omitted)
     # No 'always': with always + empty string, some Nginx versions emit the header anyway
-    add_header Strict-Transport-Security $hsts_header;
+    add_header Strict-Transport-Security \$hsts_header;
 
     # Rate limiting — burst allows short spikes, nodelay avoids artificial lag
     limit_req zone=api_limit burst=40 nodelay;
@@ -317,7 +322,6 @@ if [ "${SSL_OK}" = true ]; then
   echo -e "  API is live at:"
   echo -e "    ${GREEN}https://${API_DOMAIN}/health${NC}"
   echo -e "    ${GREEN}https://${API_DOMAIN}/api${NC}"
-  echo -e "    ${GREEN}https://${API_DOMAIN}/api/docs${NC}"
 else
   echo -e "  API running on HTTP only until DNS + SSL are sorted:"
   echo -e "    ${YELLOW}http://${API_DOMAIN}/health${NC}"

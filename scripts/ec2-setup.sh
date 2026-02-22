@@ -9,7 +9,7 @@
 #   2. Configures Docker daemon log rotation (prevents disk fill)
 #   3. Creates a 2 GB swap file (prevents OOM crashes on small instances)
 #   4. Configures OS-level firewall (UFW / firewalld)
-#   5. Creates /opt/ecommerce deployment directory with safe permissions
+#   5. Creates ~/ecommerce deployment directory
 #   6. Copies docker-compose.yml if present alongside this script
 #   7. Activates docker group without requiring SSH reconnect
 #
@@ -220,31 +220,24 @@ echo "════════════════════════�
 echo "  ✅ EC2 setup complete!"
 echo "══════════════════════════════════════════════════════════════"
 echo ""
-echo "  📌 Next steps:"
+echo "  📌 Next steps (run in this exact order):"
 echo ""
 echo "  1. Apply docker group WITHOUT logging out:"
 echo "     newgrp docker"
 echo ""
-echo "  2. Verify .env is in place and has all required secrets:"
-echo "     ls ~/ecommerce/"
-echo "     grep DOCKERHUB_USERNAME ~/ecommerce/.env"
+echo "  2. Copy your .env file to the deploy directory:"
+echo "     scp -i key.pem .env.production ubuntu@<IP>:~/ecommerce/.env"
+echo "     (must contain DATABASE_URL, REDIS_URL, JWT_SECRET, DOCKERHUB_USERNAME)"
 echo ""
-echo "  3. Add GitHub Secrets (one-time, from your local machine):"
-echo "     DOCKERHUB_USERNAME, DOCKERHUB_TOKEN"
-echo "     EC2_HOST, EC2_USER, EC2_SSH_KEY"
+echo "  3. First deploy — run deploy.sh with your Docker Hub image:"
+echo "     bash ~/ecommerce/deploy.sh <DOCKERHUB_USERNAME>/ecommerce-api latest"
+echo "     (future deploys trigger automatically via GitHub Actions on git push)"
 echo ""
-echo "  4. Push to main to trigger the CI/CD pipeline:"
-echo "     git push origin main"
+echo "  4. Verify the API container is healthy:"
+echo "     curl http://localhost:3001/health"
 echo ""
-echo "  5. Install Nginx reverse proxy (routes internet → container internally):"
-echo "     sudo dnf install -y nginx   # Amazon Linux"
-echo "     sudo apt  install -y nginx  # Ubuntu"
-echo "     # Then configure Nginx + SSL — see DEPLOYMENT.md §1.7"
-echo ""
-echo "  6. After first deploy, verify health:"
-echo "     curl http://localhost:3001/api"
-echo "     docker compose -f ~/ecommerce/docker-compose.yml ps"
-echo "     docker compose -f ~/ecommerce/docker-compose.yml logs -f api"
+echo "  5. Configure Nginx + SSL (run once after DNS A record is pointed here):"
+echo "     bash ~/nginx-setup.sh"
 echo ""
 echo "  🔥 API will be live at: https://<YOUR_DOMAIN>/api"
 echo "  ⚠  Do NOT expose port 3001 publicly — always route via Nginx + SSL"

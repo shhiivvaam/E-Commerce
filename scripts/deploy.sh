@@ -10,7 +10,7 @@
 #   4. Start SHADOW container on temp port
 #   5. Health check shadow (abort + remove shadow on failure — old stays live)
 #   6. Cut over: stop old → start new on real port
-#   7. Final cleanup
+#   7. Print success summary
 #
 # Called by GitHub Actions via SSH. Lives at ~/ecommerce/deploy.sh on EC2.
 # Usage: bash ~/ecommerce/deploy.sh <IMAGE> <TAG>
@@ -217,9 +217,9 @@ docker run -d \
 log_success "New container is live on port ${APP_PORT}"
 
 # ─────────────────────────────────────────────────────────────────────────────
-# 7. Final cleanup
+# 7. Success summary
+#    Image cleanup was already done in step 1 (age-based prune before pull).
 # ─────────────────────────────────────────────────────────────────────────────
-# image cleanup already done in step 1 (age-based prune)
 
 # ─────────────────────────────────────────────────────────────────────────────
 echo ""
