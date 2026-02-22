@@ -53,7 +53,7 @@ services:
       FRONTEND_URL: ${FRONTEND_URL:-https://your-vercel-domain.vercel.app}
 
     healthcheck:
-      test: [ "CMD", "wget", "--quiet", "--spider", "http://localhost:3001/api" ]
+      test: [ "CMD", "wget", "--quiet", "--spider", "http://localhost:3001/health" ]
       interval: 30s
       timeout: 10s
       retries: 3

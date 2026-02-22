@@ -43,7 +43,7 @@ SHADOW_NAME="ecommerce-api-shadow"
 MIGRATE_NAME="ecommerce-api-migrate"
 APP_PORT=3001
 SHADOW_PORT=3099
-HEALTH_URL="http://localhost:${SHADOW_PORT}/api"
+HEALTH_URL="http://localhost:${SHADOW_PORT}/health"
 
 MAX_RETRIES=18      # 18 × 5s = 90s max wait
 RETRY_INTERVAL=5

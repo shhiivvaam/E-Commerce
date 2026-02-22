@@ -20,6 +20,14 @@ async function bootstrap() {
   });
   app.use(cookieParser());
 
+  // ── Health check endpoint (MUST be before setGlobalPrefix) ──────────────
+  // Lives at GET /health — not /api/health — so it's always reachable
+  // Used by: deploy.sh blue-green check, Docker HEALTHCHECK, uptime monitors
+  const httpAdapter = app.getHttpAdapter();
+  httpAdapter.get('/health', (_req: any, res: any) => {
+    res.status(200).json({ status: 'ok', timestamp: new Date().toISOString() });
+  });
+
   // Global prefixes
   app.setGlobalPrefix('api');
 
@@ -35,5 +43,6 @@ async function bootstrap() {
   SwaggerModule.setup('api/docs', app, document);
 
   await app.listen(process.env.PORT || 3001);
+
 }
 bootstrap();
