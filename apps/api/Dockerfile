@@ -8,24 +8,25 @@ RUN apk add --no-cache python3 make g++
 
 WORKDIR /app
 
-# Copy package manifests first for layer caching
+# Copy the entire monorepo for NPM Workspaces to resolve correctly
 COPY package.json package-lock.json* ./
-COPY prisma ./prisma/
+COPY apps/api/package.json ./apps/api/
+COPY apps/api/prisma ./apps/api/prisma/
 
-# Install ALL dependencies (including dev, needed for build)
-RUN if [ -f package-lock.json ]; then npm ci; else npm install; fi
-
-# Copy source code
+# Copy the rest of the monorepo source (in a real monorepo we'd only copy what we need, but for simplicity we copy all to resolve local workspace dependencies)
 COPY . .
 
+# Install ALL dependencies at the root
+RUN if [ -f package-lock.json ]; then npm ci; else npm install; fi
+
 # Generate Prisma client
-RUN npx prisma generate
+RUN npx -y prisma generate --schema=apps/api/prisma/schema.prisma
 
-# Compile TypeScript → dist/
-RUN npm run build
+# Compile TypeScript using npm workspace command
+RUN npm run build -w apps/api
 
-# Verify the build produced dist/main.js (fail fast with clear output if not)
-RUN echo "=== dist/ contents ==" && find dist -type f -name '*.js' | head -20 && test -f dist/main.js
+# Verify
+RUN echo "=== dist/ contents ==" && find apps/api/dist -type f -name '*.js' | head -20 && test -f apps/api/dist/src/main.js
 
 # ─────────────────────────────────────────────────────────────
 # Stage 2: Production runtime
@@ -36,18 +37,19 @@ RUN apk add --no-cache tini
 
 WORKDIR /app
 
-# Copy package manifests
+# Copy root manifests
 COPY package.json package-lock.json* ./
-COPY prisma ./prisma/
+COPY apps/api/package.json ./apps/api/
+COPY apps/api/prisma ./apps/api/prisma/
 
-# Install ONLY production dependencies
+# Install ONLY production dependencies at the root
 RUN if [ -f package-lock.json ]; then npm ci --omit=dev; else npm install --omit=dev; fi && npm cache clean --force
 
 # Generate Prisma client for production image
-RUN npx prisma generate
+RUN npx -y prisma generate --schema=apps/api/prisma/schema.prisma
 
 # Copy compiled output from builder
-COPY --from=builder /app/dist ./dist
+COPY --from=builder /app/apps/api/dist ./apps/api/dist
 
 # Create a non-root user for security
 RUN addgroup -S appgroup && adduser -S appuser -G appgroup
@@ -59,7 +61,5 @@ EXPOSE 3001
 # Use tini as PID 1 for proper signal handling
 ENTRYPOINT ["/sbin/tini", "--"]
 
-# Run prisma migrate deploy then start the app
-# NOTE: migrations are handled by deploy.sh in a dedicated temp container
-# before this container ever starts — so we just start the app directly.
-CMD ["node", "dist/main.js"]
+# Start the app from the proper monorepo path
+CMD ["node", "apps/api/dist/src/main.js"]

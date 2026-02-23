@@ -4,12 +4,12 @@
 #
 # Strategy:
 #   0. Pre-flight checks
-#   1. Pre-cleanup (dangling images, stopped containers)
+#   1. Pre-cleanup (dangling images)
 #   2. Pull new image
-#   3. Run DB migrations in a TEMP container (abort on failure — no downtime)
-#   4. Start SHADOW container on temp port
-#   5. Health check shadow (abort + remove shadow on failure — old stays live)
-#   6. Cut over: stop old → start new on real port
+#   3. Run DB migrations in a TEMP container (abort on failure)
+#   4. Start SHADOW container on temp port via strict `docker run`
+#   5. Health check shadow (abort + remove shadow on failure)
+#   6. Cut over: remove shadow -> docker compose up -d (brings up real container cleanly)
 #   7. Print success summary
 #
 # Called by GitHub Actions via SSH. Lives at ~/ecommerce/deploy.sh on EC2.
@@ -32,11 +32,12 @@ log_error()   { echo -e "${RED}  ❌ $*${NC}"; }
 # ── Config ────────────────────────────────────────────────────────────────────
 IMAGE="${1:?Usage: deploy.sh <IMAGE> <TAG>}"
 TAG="${2:-latest}"
-FULL_IMAGE="${IMAGE}:${TAG}"
+export API_IMAGE="${IMAGE}:${TAG}"
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 DEPLOY_DIR="${SCRIPT_DIR}"
 ENV_FILE="${DEPLOY_DIR}/.env"
+COMPOSE_FILE="${DEPLOY_DIR}/docker-compose.yml"
 
 CONTAINER_NAME="ecommerce-api"
 SHADOW_NAME="ecommerce-api-shadow"
@@ -45,14 +46,14 @@ APP_PORT=3001
 SHADOW_PORT=3099
 HEALTH_URL="http://localhost:${SHADOW_PORT}/health"
 
-MAX_RETRIES=18      # 18 × 5s = 90s max wait
+MAX_RETRIES=12      # 12 × 5s = 60s max wait
 RETRY_INTERVAL=5
 
 # ─────────────────────────────────────────────────────────────────────────────
 echo ""
 echo -e "${CYAN}══════════════════════════════════════════════════════════════${NC}"
-echo -e "${CYAN}  🚀 E-Commerce API — Blue-Green Production Deployment${NC}"
-echo -e "${CYAN}  Image : ${FULL_IMAGE}${NC}"
+echo -e "${CYAN}  🚀 E-Commerce API — Hybrid Blue-Green Deployment${NC}"
+echo -e "${CYAN}  Image : ${API_IMAGE}${NC}"
 echo -e "${CYAN}  Time  : $(date)${NC}"
 echo -e "${CYAN}══════════════════════════════════════════════════════════════${NC}"
 echo ""
@@ -67,6 +68,11 @@ if [ ! -f "${ENV_FILE}" ]; then
   exit 1
 fi
 
+if [ ! -f "${COMPOSE_FILE}" ]; then
+  log_error "docker-compose.yml not found at ${COMPOSE_FILE} — aborting!"
+  exit 1
+fi
+
 if ! docker info &>/dev/null; then
   log_error "Docker daemon is not running — aborting!"
   exit 1
@@ -76,9 +82,6 @@ log_success "Pre-flight checks passed"
 
 # ─────────────────────────────────────────────────────────────────────────────
 # 1. Pre-cleanup
-#    • Stopped containers  → removed (running containers are untouched)
-#    • Unused images >7d   → removed (-a = all tagged+untagged, images used
-#                            by running containers are protected by Docker)
 # ─────────────────────────────────────────────────────────────────────────────
 log_info "[1/7] Pre-deploy cleanup..."
 
@@ -90,9 +93,9 @@ log_success "Cleanup done"
 # ─────────────────────────────────────────────────────────────────────────────
 # 2. Pull the new image
 # ─────────────────────────────────────────────────────────────────────────────
-log_info "[2/7] Pulling ${FULL_IMAGE}..."
+log_info "[2/7] Pulling ${API_IMAGE}..."
 
-if ! docker pull "${FULL_IMAGE}"; then
+if ! docker pull "${API_IMAGE}"; then
   log_error "Failed to pull image — aborting! Old container untouched."
   exit 1
 fi
@@ -100,8 +103,7 @@ fi
 log_success "Image pulled"
 
 # ─────────────────────────────────────────────────────────────────────────────
-# 3. Run DB Migrations in a temp container (CRITICAL SAFETY GATE)
-#    If migrations fail → abort NOW before touching the running container
+# 3. Run DB Migrations
 # ─────────────────────────────────────────────────────────────────────────────
 log_info "[3/7] Running Prisma migrations in temp container..."
 
@@ -112,8 +114,8 @@ if ! docker run --rm \
   --name  "${MIGRATE_NAME}" \
   --env-file "${ENV_FILE}" \
   -e NODE_ENV=production \
-  "${FULL_IMAGE}" \
-  npx prisma migrate deploy; then
+  "${API_IMAGE}" \
+  npx -y prisma migrate deploy; then
   log_error "Migrations FAILED — aborting deployment. Old container is still live."
   exit 1
 fi
@@ -121,7 +123,7 @@ fi
 log_success "Migrations applied successfully"
 
 # ─────────────────────────────────────────────────────────────────────────────
-# 4. Start shadow container on temp port
+# 4. Start shadow container for visual healthcheck test
 # ─────────────────────────────────────────────────────────────────────────────
 log_info "[4/7] Starting shadow container on port ${SHADOW_PORT}..."
 
@@ -135,20 +137,12 @@ docker run -d \
   -e PORT="${APP_PORT}" \
   -p "127.0.0.1:${SHADOW_PORT}:${APP_PORT}" \
   --restart no \
-  --cap-drop ALL \
-  --cap-add  NET_BIND_SERVICE \
-  --security-opt no-new-privileges:true \
-  --memory=512m \
-  --memory-reservation=256m \
-  --cpus="1.0" \
-  --pids-limit=200 \
-  "${FULL_IMAGE}"
+  "${API_IMAGE}"
 
 log_success "Shadow container started"
 
 # ─────────────────────────────────────────────────────────────────────────────
 # 5. Health check shadow container
-#    Fail → remove shadow, old container keeps serving traffic
 # ─────────────────────────────────────────────────────────────────────────────
 log_info "[5/7] Health checking shadow (max ${MAX_RETRIES}×${RETRY_INTERVAL}s = $((MAX_RETRIES * RETRY_INTERVAL))s)..."
 
@@ -168,64 +162,39 @@ done
 
 # ── Auto-rollback: health check failed ───────────────────────────────────────
 if [ "${HEALTHY}" = false ]; then
-  log_error "Health check failed after $((MAX_RETRIES * RETRY_INTERVAL))s!"
+  log_error "Health check failed!"
   echo ""
-  log_warn "Shadow container logs (last 50 lines):"
+  log_warn "Shadow container logs:"
   docker logs --tail=50 "${SHADOW_NAME}" || true
-  echo ""
   docker stop "${SHADOW_NAME}" 2>/dev/null || true
   docker rm   "${SHADOW_NAME}" 2>/dev/null || true
-  log_error "Deployment ABORTED — old container is still live. No downtime."
+  log_error "Deployment ABORTED — old container is still live."
   exit 1
 fi
 
 # ─────────────────────────────────────────────────────────────────────────────
-# 6. Cut over: stop shadow → stop old → start new on real port
-#    (~1-2s gap is the only downtime window)
+# 6. Cut over utilizing docker-compose safely
 # ─────────────────────────────────────────────────────────────────────────────
-log_info "[6/7] Cutting over to new container on port ${APP_PORT}..."
+log_info "[6/7] Cutting over using docker-compose..."
 
-docker stop "${SHADOW_NAME}" && docker rm "${SHADOW_NAME}"
+# Stop shadow container correctly releasing the lock
+docker stop "${SHADOW_NAME}" 2>/dev/null || true
+docker rm "${SHADOW_NAME}" 2>/dev/null || true
 
-docker stop "${CONTAINER_NAME}" 2>/dev/null || true
-docker rm   "${CONTAINER_NAME}" 2>/dev/null || true
+# Boot the new container directly through Compose!
+# Using docker-compose ensures the correct memory configs, limits, and restart policies from the YML apply.
+docker compose -f "${COMPOSE_FILE}" up -d api
 
-docker run -d \
-  --name "${CONTAINER_NAME}" \
-  --env-file "${ENV_FILE}" \
-  -e NODE_ENV=production \
-  -e PORT="${APP_PORT}" \
-  -p "127.0.0.1:${APP_PORT}:${APP_PORT}" \
-  --restart unless-stopped \
-  --cap-drop ALL \
-  --cap-add  NET_BIND_SERVICE \
-  --security-opt no-new-privileges:true \
-  --memory=512m \
-  --memory-reservation=256m \
-  --cpus="1.0" \
-  --pids-limit=200 \
-  --health-cmd="wget --quiet --spider http://localhost:${APP_PORT}/health || exit 1" \
-  --health-interval=30s \
-  --health-timeout=10s \
-  --health-retries=3 \
-  --health-start-period=40s \
-  --log-driver json-file \
-  --log-opt max-size=10m \
-  --log-opt max-file=3 \
-  "${FULL_IMAGE}"
-
-log_success "New container is live on port ${APP_PORT}"
+log_success "New container is live via docker-compose"
 
 # ─────────────────────────────────────────────────────────────────────────────
 # 7. Success summary
-#    Image cleanup was already done in step 1 (age-based prune before pull).
 # ─────────────────────────────────────────────────────────────────────────────
 
-# ─────────────────────────────────────────────────────────────────────────────
 echo ""
 echo -e "${GREEN}══════════════════════════════════════════════════════════════${NC}"
 echo -e "${GREEN}  ✅ Deployment Successful! — $(date)${NC}"
 echo -e "${GREEN}══════════════════════════════════════════════════════════════${NC}"
 echo ""
-docker ps --filter "name=${CONTAINER_NAME}" --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"
+docker compose -f "${COMPOSE_FILE}" ps
 echo ""

@@ -16,8 +16,8 @@ version: '3.8'
 
 services:
   api:
-    # CI/CD pipeline updates this image tag automatically on every push to main
-    image: ${DOCKERHUB_USERNAME}/ecommerce-api:latest
+    # CI/CD pipeline dynamically passes this variable
+    image: ${API_IMAGE:-ecommerce-api:latest}
     container_name: ecommerce-api
     restart: unless-stopped
 

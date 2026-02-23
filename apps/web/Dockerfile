@@ -6,7 +6,11 @@ FROM node:20-alpine AS deps
 RUN apk add --no-cache libc6-compat
 WORKDIR /app
 
+# Copy the root manifests and install monorepo-wide to resolve workspaces
 COPY package.json package-lock.json* ./
+# Copy all workspace packages just to ensure correct dependency resolution
+COPY . .
+
 RUN if [ -f package-lock.json ]; then npm ci; else npm install; fi
 
 # ─────────────────────────────────────────────────────────────
@@ -20,15 +24,15 @@ COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
 # Build-time env vars (non-secret, baked into the bundle)
-# Secret values must NOT be set here — use runtime env instead
 ARG NEXT_PUBLIC_API_URL
 ENV NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL}
 ENV NEXT_TELEMETRY_DISABLED=1
 
-RUN npm run build
+# Run build target within the exact workspace
+RUN mkdir -p apps/web/public && npm run build -w apps/web
 
 # ─────────────────────────────────────────────────────────────
-# Stage 3: Production runner (uses Next.js standalone output)
+# Stage 3: Production runner (Next.js Standalone in a Monorepo)
 # ─────────────────────────────────────────────────────────────
 FROM node:20-alpine AS runner
 
@@ -40,23 +44,24 @@ ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
 ENV PORT=3000
 
-# Create non-root user
 RUN addgroup -S appgroup && adduser -S appuser -G appgroup
 
-# Pre-create public dir so the COPY never fails even if public/ is empty
-RUN mkdir -p ./public ./.next/static
+# Pre-create necessary Next.js directories
+RUN mkdir -p ./apps/web/public ./apps/web/.next/static
 
-# Copy only what Next.js standalone needs
-COPY --from=builder --chown=appuser:appgroup /app/.next/standalone  ./
-COPY --from=builder --chown=appuser:appgroup /app/.next/static      ./.next/static
-# public/ is optional — copy only if it exists in builder
-RUN true  # layer separator
-COPY --from=builder --chown=appuser:appgroup /app/public/. ./public/
+# Given monorepo standalone tracing, the standalone directory replicates the whole repo tree
+# We copy everything inside the standalone bundle directly to the runner root
+COPY --from=builder --chown=appuser:appgroup /app/apps/web/.next/standalone ./
+COPY --from=builder --chown=appuser:appgroup /app/apps/web/.next/static ./apps/web/.next/static
 
+# Safely copy public directory (we ensure it exists in the deps/builder phase or we just copy carefully)
+COPY --from=builder --chown=appuser:appgroup /app/apps/web/public ./apps/web/public
 
 USER appuser
 
 EXPOSE 3000
 
 ENTRYPOINT ["/sbin/tini", "--"]
-CMD ["node", "server.js"]
+
+# Start from the nested standalone location
+CMD ["node", "apps/web/server.js"]
