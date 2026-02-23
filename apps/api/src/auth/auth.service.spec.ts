@@ -2,6 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { AuthService } from './auth.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { JwtService } from '@nestjs/jwt';
+import { EmailService } from '../email/email.service';
 
 describe('AuthService', () => {
   let service: AuthService;
@@ -20,6 +21,10 @@ describe('AuthService', () => {
         {
           provide: JwtService,
           useValue: { sign: jest.fn().mockReturnValue('token') },
+        },
+        {
+          provide: EmailService,
+          useValue: { sendVerificationEmail: jest.fn(), sendPasswordReset: jest.fn() },
         },
       ],
     }).compile();
