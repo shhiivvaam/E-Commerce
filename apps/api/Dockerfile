@@ -45,8 +45,8 @@ COPY apps/api/prisma ./apps/api/prisma/
 # Install ONLY production dependencies at the root
 RUN if [ -f package-lock.json ]; then npm ci --omit=dev; else npm install --omit=dev; fi && npm cache clean --force
 
-# Generate Prisma client for production image
-RUN npx -y prisma generate --schema=apps/api/prisma/schema.prisma
+# Install Prisma globally just to generate the client and then remove it to save space
+RUN npm install -g prisma@6.0.0 && prisma generate --schema=apps/api/prisma/schema.prisma && npm uninstall -g prisma
 
 # Copy compiled output from builder
 COPY --from=builder /app/apps/api/dist ./apps/api/dist
