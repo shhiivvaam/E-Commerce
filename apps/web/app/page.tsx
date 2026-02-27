@@ -6,14 +6,41 @@ import { ProductCard } from "@/components/ProductCard";
 import Link from "next/link";
 import { ArrowRight, Zap, Shield, Truck } from "lucide-react";
 
-const SAMPLE_PRODUCTS = [
-  { id: "1", title: "Premium Wireless Headphones", description: "Immersive noise-cancelling audio experience tailored for audiophiles.", price: 299.99, image: "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?q=80&w=1000&auto=format&fit=crop" },
-  { id: "2", title: "Minimalist Smartwatch", description: "Track your fitness and stay connected with this sleek design.", price: 199.99, image: "https://images.unsplash.com/photo-1523275335684-37898b6baf30?q=80&w=1000&auto=format&fit=crop" },
-  { id: "3", title: "Ergonomic Mechanical Keyboard", description: "Tactile switches with customizable RGB lighting for creators.", price: 149.99, image: "https://images.unsplash.com/photo-1511467687858-23d9a1a2e316?q=80&w=1000&auto=format&fit=crop" },
-  { id: "4", title: "Polaroid Instant Camera", description: "Capture the moment instantly with vintage polaroid film.", price: 129.99, image: "https://images.unsplash.com/photo-1526170375885-4d8ecf77b99f?q=80&w=1000&auto=format&fit=crop" },
-];
+import { useEffect, useState } from "react";
+import { api } from "@/lib/api";
+
+interface Product {
+  id: string;
+  title: string;
+  description: string;
+  price: number;
+  image: string;
+}
 
 export default function Home() {
+  const [products, setProducts] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchTrendingProducts = async () => {
+      try {
+        const { data } = await api.get('/products?limit=4');
+        const formattedProducts = data.products.map((p: any) => ({
+          id: p.id,
+          title: p.title,
+          description: p.description,
+          price: p.price,
+          image: p.gallery && p.gallery.length > 0 ? p.gallery[0] : "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?q=80&w=1000&auto=format&fit=crop",
+        }));
+        setProducts(formattedProducts);
+      } catch (error) {
+        console.error("Failed to fetch products:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchTrendingProducts();
+  }, []);
   return (
     <div className="flex flex-col min-h-screen">
       {/* Hero Section */}
@@ -61,9 +88,19 @@ export default function Home() {
             </Link>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
-            {SAMPLE_PRODUCTS.map((product) => (
-              <ProductCard key={product.id} product={product} />
-            ))}
+            {loading ? (
+              Array.from({ length: 4 }).map((_, i) => (
+                <div key={i} className="h-[400px] bg-muted animate-pulse rounded-2xl" />
+              ))
+            ) : products.length > 0 ? (
+              products.map((product) => (
+                <ProductCard key={product.id} product={product} />
+              ))
+            ) : (
+              <div className="col-span-1 sm:col-span-2 lg:col-span-4 text-center py-10">
+                <p className="text-muted-foreground">No trending products available right now. Please check back later.</p>
+              </div>
+            )}
           </div>
         </div>
       </section>

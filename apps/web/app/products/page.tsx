@@ -1,23 +1,54 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { ProductCard } from "@/components/ProductCard";
+import { api } from "@/lib/api";
 
-const SAMPLE_PRODUCTS = [
-    { id: "1", title: "Premium Wireless Headphones", description: "Immersive noise-cancelling audio experience tailored for audiophiles.", price: 299.99, image: "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?q=80&w=1000&auto=format&fit=crop", category: "audio" },
-    { id: "2", title: "Minimalist Smartwatch", description: "Track your fitness and stay connected with this sleek design.", price: 199.99, image: "https://images.unsplash.com/photo-1523275335684-37898b6baf30?q=80&w=1000&auto=format&fit=crop", category: "wearable" },
-    { id: "3", title: "Ergonomic Mechanical Keyboard", description: "Tactile switches with customizable RGB lighting for creators.", price: 149.99, image: "https://images.unsplash.com/photo-1511467687858-23d9a1a2e316?q=80&w=1000&auto=format&fit=crop", category: "accessories" },
-    { id: "4", title: "Polaroid Instant Camera", description: "Capture the moment instantly with vintage polaroid film.", price: 129.99, image: "https://images.unsplash.com/photo-1526170375885-4d8ecf77b99f?q=80&w=1000&auto=format&fit=crop", category: "photography" },
-    { id: "5", title: "Wireless Charging Pad", description: "Fast-charging Qi pad compatible with modern smartphones.", price: 49.99, image: "https://images.unsplash.com/photo-1586816879360-004f5b0c51e3?q=80&w=1000&auto=format&fit=crop", category: "accessories" },
-    { id: "6", title: "Noise-isolating Earbuds", description: "Compact buds delivering powerful bass and clear highs.", price: 89.99, image: "https://images.unsplash.com/photo-1590658268037-6bf12165a8df?q=80&w=1000&auto=format&fit=crop", category: "audio" },
-];
+interface Product {
+    id: string;
+    title: string;
+    description: string;
+    price: number;
+    image: string;
+    category?: string;
+}
 
 export default function ProductsPage() {
     const [filter, setFilter] = useState("all");
+    const [products, setProducts] = useState<Product[]>([]);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        const fetchProducts = async () => {
+            setLoading(true);
+            try {
+                // If filter is "all", fetch without categoryId.
+                // Ideally we'd need a way to map category slug to categoryId or the API would support slug filters.
+                // For now, we will fetch all and filter client side if the category API is not fully hooked up.
+                const { data } = await api.get('/products?limit=50');
+
+                const formattedProducts = data.products.map((p: any) => ({
+                    id: p.id,
+                    title: p.title,
+                    description: p.description,
+                    price: p.price,
+                    image: p.gallery && p.gallery.length > 0 ? p.gallery[0] : "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?q=80&w=1000&auto=format&fit=crop",
+                    category: p.category?.slug || 'uncategorized'
+                }));
+
+                setProducts(formattedProducts);
+            } catch (error) {
+                console.error("Failed to fetch products:", error);
+            } finally {
+                setLoading(false);
+            }
+        };
+        fetchProducts();
+    }, []);
 
     const filteredProducts = filter === "all"
-        ? SAMPLE_PRODUCTS
-        : SAMPLE_PRODUCTS.filter(p => p.category === filter);
+        ? products
+        : products.filter(p => p.category === filter);
 
     return (
         <div className="container mx-auto px-4 py-12">
@@ -34,8 +65,8 @@ export default function ProductsPage() {
                         key={cat}
                         onClick={() => setFilter(cat)}
                         className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${filter === cat
-                                ? "bg-primary text-primary-foreground"
-                                : "bg-muted text-muted-foreground hover:bg-muted/80"
+                            ? "bg-primary text-primary-foreground"
+                            : "bg-muted text-muted-foreground hover:bg-muted/80"
                             }`}
                     >
                         {cat.charAt(0).toUpperCase() + cat.slice(1)}
@@ -44,9 +75,19 @@ export default function ProductsPage() {
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
-                {filteredProducts.map((product) => (
-                    <ProductCard key={product.id} product={product} />
-                ))}
+                {loading ? (
+                    Array.from({ length: 8 }).map((_, i) => (
+                        <div key={i} className="h-[400px] bg-muted animate-pulse rounded-2xl" />
+                    ))
+                ) : filteredProducts.length > 0 ? (
+                    filteredProducts.map((product) => (
+                        <ProductCard key={product.id} product={product} />
+                    ))
+                ) : (
+                    <div className="col-span-full py-20 text-center">
+                        <p className="text-xl text-muted-foreground">No products found for this category.</p>
+                    </div>
+                )}
             </div>
         </div>
     );

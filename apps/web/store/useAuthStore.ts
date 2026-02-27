@@ -12,6 +12,7 @@ interface AuthState {
     token: string | null;
     login: (user: User, token: string) => void;
     logout: () => void;
+    updateUser: (data: Partial<User>) => void;
     isAuthenticated: boolean;
 }
 
@@ -23,6 +24,7 @@ export const useAuthStore = create<AuthState>()(
             isAuthenticated: false,
             login: (user, token) => set({ user, token, isAuthenticated: true }),
             logout: () => set({ user: null, token: null, isAuthenticated: false }),
+            updateUser: (data) => set((state) => ({ user: state.user ? { ...state.user, ...data } : null })),
         }),
         {
             name: 'ecommerce-auth',

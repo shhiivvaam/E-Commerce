@@ -1,24 +1,51 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useCartStore } from "@/store/useCartStore";
 import { Button } from "@/components/ui/button";
 import Image from "next/image";
 import { ShoppingCart, Star, ShieldCheck, Truck, ArrowLeft } from "lucide-react";
 import Link from "next/link";
+import { api } from "@/lib/api";
 
-// Using the same mock for frontend demo before connecting to backend
-const SAMPLE_PRODUCTS = [
-    { id: "1", title: "Premium Wireless Headphones", description: "Immersive noise-cancelling audio experience tailored for audiophiles.", price: 299.99, image: "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?q=80&w=1000&auto=format&fit=crop", category: "audio" },
-    { id: "2", title: "Minimalist Smartwatch", description: "Track your fitness and stay connected with this sleek design.", price: 199.99, image: "https://images.unsplash.com/photo-1523275335684-37898b6baf30?q=80&w=1000&auto=format&fit=crop", category: "wearable" },
-];
+interface Product {
+    id: string;
+    title: string;
+    description: string;
+    price: number;
+    image: string;
+    category?: string;
+}
 
 export default function ProductDetailPage({ params }: { params: { id: string } }) {
-    const product = SAMPLE_PRODUCTS.find(p => p.id === params.id) || SAMPLE_PRODUCTS[0]; // fallback for demo
+    const [product, setProduct] = useState<Product | null>(null);
+    const [loading, setLoading] = useState(true);
+
     const addItem = useCartStore(state => state.addItem);
     const [quantity, setQuantity] = useState(1);
 
+    useEffect(() => {
+        const fetchProduct = async () => {
+            try {
+                const { data } = await api.get(`/products/${params.id}`);
+                setProduct({
+                    id: data.id,
+                    title: data.title,
+                    description: data.description,
+                    price: data.price,
+                    image: data.gallery && data.gallery.length > 0 ? data.gallery[0] : "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?q=80&w=1000&auto=format&fit=crop",
+                });
+            } catch (err) {
+                console.error("Failed to load product details", err);
+            } finally {
+                setLoading(false);
+            }
+        };
+        fetchProduct();
+    }, [params.id]);
+
     const handleAddToCart = () => {
+        if (!product) return;
         addItem({
             productId: product.id,
             title: product.title,
@@ -27,6 +54,24 @@ export default function ProductDetailPage({ params }: { params: { id: string } }
             image: product.image
         });
     };
+
+    if (loading) {
+        return (
+            <div className="container mx-auto px-4 py-20 flex justify-center items-center text-xl text-muted-foreground animate-pulse">
+                Loading product...
+            </div>
+        );
+    }
+
+    if (!product) {
+        return (
+            <div className="container mx-auto px-4 py-20 flex flex-col justify-center items-center text-center">
+                <h1 className="text-3xl font-bold mb-4">Product Not Found</h1>
+                <p className="text-muted-foreground mb-8">The product you are looking for does not exist.</p>
+                <Link href="/products"><Button>Browse All Products</Button></Link>
+            </div>
+        );
+    }
 
     return (
         <div className="container mx-auto px-4 py-8">

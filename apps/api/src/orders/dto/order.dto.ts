@@ -1,4 +1,4 @@
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import {
   IsString,
   IsNumber,
@@ -6,8 +6,17 @@ import {
   ValidateNested,
   Min,
   IsIn,
+  IsOptional,
 } from 'class-validator';
 import { Type } from 'class-transformer';
+
+export class CreateAddressDto {
+  @ApiProperty() @IsString() street: string;
+  @ApiProperty() @IsString() city: string;
+  @ApiProperty() @IsString() state: string;
+  @ApiProperty() @IsString() country: string;
+  @ApiProperty() @IsString() zipCode: string;
+}
 
 export class OrderItemDto {
   @ApiProperty({ example: 'clx_product_id_123', description: 'Product ID' })
@@ -30,12 +39,19 @@ export class CreateOrderDto {
   @Type(() => OrderItemDto)
   items: OrderItemDto[];
 
-  @ApiProperty({
+  @ApiPropertyOptional({
     example: 'clx_address_id_123',
     description: 'Saved address ID for shipping',
   })
   @IsString()
-  addressId: string;
+  @IsOptional()
+  addressId?: string;
+
+  @ApiPropertyOptional({ description: 'New address details if not using an existing addressId' })
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => CreateAddressDto)
+  address?: CreateAddressDto;
 }
 
 export class UpdateOrderStatusDto {

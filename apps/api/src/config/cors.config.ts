@@ -47,7 +47,10 @@ export const getCorsConfig = (): CorsOptions => {
         logger.warn(`Blocked origin: ${requestOrigin}`);
         // Return null, false to avoid 500 error on preflight (let browser block it cleanly)
         // or resolve with an explicit ForbiddenException.
-        callback(new ForbiddenException(`Origin ${requestOrigin} not allowed by CORS`), false);
+        callback(
+          new ForbiddenException(`Origin ${requestOrigin} not allowed by CORS`),
+          false,
+        );
       }
     },
     methods: ['GET', 'HEAD', 'PUT', 'PATCH', 'POST', 'DELETE', 'OPTIONS'],

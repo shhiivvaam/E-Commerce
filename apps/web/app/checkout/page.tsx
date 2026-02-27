@@ -9,6 +9,8 @@ import { CheckCircle2, CreditCard, MapPin, Package, Lock } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
+import { api } from "@/lib/api";
+import toast from "react-hot-toast";
 
 const steps = [
     { id: 1, name: "Shipping Address", icon: MapPin },
@@ -20,6 +22,18 @@ export default function CheckoutPage() {
     const [currentStep, setCurrentStep] = useState(1);
     const { items, total, clearCart } = useCartStore();
     const [isProcessing, setIsProcessing] = useState(false);
+
+    // Address state
+    const [address, setAddress] = useState({
+        firstName: "",
+        lastName: "",
+        street: "",
+        city: "",
+        zipCode: "",
+        state: "NY",
+        country: "US"
+    });
+
     const router = useRouter();
 
     if (items.length === 0 && currentStep !== 4) {
@@ -38,12 +52,56 @@ export default function CheckoutPage() {
 
     const handlePlaceOrder = async () => {
         setIsProcessing(true);
-        // Real implementation would hit the NestJS `POST /payments/checkout`
-        // Returning a Stripe session URL and redirecting. We mock the delay here.
-        await new Promise(r => setTimeout(r, 1500));
-        setIsProcessing(false);
-        clearCart();
-        setCurrentStep(4);
+        try {
+            // 1. Create Order
+            const orderPayload = {
+                items: items.map(i => ({ productId: i.productId, quantity: i.quantity })),
+                address: {
+                    street: address.street,
+                    city: address.city,
+                    state: address.state,
+                    country: address.country,
+                    zipCode: address.zipCode
+                }
+            };
+
+            const orderRes = await api.post('/orders', orderPayload);
+            const orderId = orderRes.data.id;
+
+            // 2. Clear Local Cart since the order was successfully created
+            await clearCart();
+
+            // 3. Initiate Checkout Session
+            const checkoutPayload = {
+                orderId,
+                items: items.map(i => ({
+                    title: i.title,
+                    price: i.price,
+                    quantity: i.quantity
+                })),
+                successUrl: `${window.location.origin}/dashboard/orders?success=true`,
+                cancelUrl: `${window.location.origin}/checkout?canceled=true`
+            };
+
+            const paymentRes = await api.post('/payments/checkout', checkoutPayload);
+
+            // Redirect to Stripe or external handler
+            if (paymentRes.data.url) {
+                window.location.href = paymentRes.data.url;
+            } else {
+                // Fallback to step 4 if no URL is provided
+                setCurrentStep(4);
+            }
+
+        } catch (error) {
+            console.error("Order failed", error);
+            toast.error("Failed to place order. Please check your information and try again.");
+            setIsProcessing(false);
+        }
+    };
+
+    const updateAddress = (field: string, value: string) => {
+        setAddress(prev => ({ ...prev, [field]: value }));
     };
 
     return (
@@ -90,14 +148,31 @@ export default function CheckoutPage() {
                         <div className="space-y-6">
                             <h2 className="text-2xl font-bold">Shipping Details</h2>
                             <div className="grid sm:grid-cols-2 gap-4">
-                                <div className="space-y-2"><label className="text-sm font-medium">First Name</label><Input placeholder="John" /></div>
-                                <div className="space-y-2"><label className="text-sm font-medium">Last Name</label><Input placeholder="Doe" /></div>
-                                <div className="space-y-2 sm:col-span-2"><label className="text-sm font-medium">Street Address</label><Input placeholder="123 Main St" /></div>
-                                <div className="space-y-2"><label className="text-sm font-medium">City</label><Input placeholder="New York" /></div>
-                                <div className="space-y-2"><label className="text-sm font-medium">ZIP Code</label><Input placeholder="10001" /></div>
+                                <div className="space-y-2">
+                                    <label className="text-sm font-medium">First Name</label>
+                                    <Input value={address.firstName} onChange={e => updateAddress('firstName', e.target.value)} placeholder="John" />
+                                </div>
+                                <div className="space-y-2">
+                                    <label className="text-sm font-medium">Last Name</label>
+                                    <Input value={address.lastName} onChange={e => updateAddress('lastName', e.target.value)} placeholder="Doe" />
+                                </div>
+                                <div className="space-y-2 sm:col-span-2">
+                                    <label className="text-sm font-medium">Street Address</label>
+                                    <Input value={address.street} onChange={e => updateAddress('street', e.target.value)} placeholder="123 Main St" />
+                                </div>
+                                <div className="space-y-2">
+                                    <label className="text-sm font-medium">City</label>
+                                    <Input value={address.city} onChange={e => updateAddress('city', e.target.value)} placeholder="New York" />
+                                </div>
+                                <div className="space-y-2">
+                                    <label className="text-sm font-medium">ZIP Code</label>
+                                    <Input value={address.zipCode} onChange={e => updateAddress('zipCode', e.target.value)} placeholder="10001" />
+                                </div>
                             </div>
                             <div className="pt-4 flex justify-end">
-                                <Button size="lg" onClick={handleNext}>Continue to Payment</Button>
+                                <Button size="lg" onClick={handleNext} disabled={!address.street || !address.city || !address.zipCode}>
+                                    Continue to Payment
+                                </Button>
                             </div>
                         </div>
                     )}
@@ -162,10 +237,10 @@ export default function CheckoutPage() {
                             </div>
                             <h2 className="text-3xl font-extrabold tracking-tight">Order Confirmed!</h2>
                             <p className="text-lg text-muted-foreground max-w-md mx-auto">
-                                Thank you for your purchase. We have received your order and will send you a confirmation email shortly.
+                                Thank you for your purchase. Your payment was successful and we are processing your order.
                             </p>
                             <div className="pt-8">
-                                <Button size="lg" onClick={() => router.push('/dashboard/orders')} variant="outline" className="mr-4">View Order</Button>
+                                <Button size="lg" onClick={() => router.push('/dashboard/orders')} variant="outline" className="mr-4">View Orders</Button>
                                 <Button size="lg" onClick={() => router.push('/')}>Continue Shopping</Button>
                             </div>
                         </div>
