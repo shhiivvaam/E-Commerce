@@ -13,7 +13,7 @@ export class ProductsService {
   constructor(
     private prisma: PrismaService,
     private settings: SettingsService,
-  ) { }
+  ) {}
 
   private generateSlug(title: string): string {
     return (
@@ -30,7 +30,9 @@ export class ProductsService {
     // Block creation in single product mode
     const isSingle = await this.settings.isSingleProductMode();
     if (isSingle) {
-      throw new Error('Cannot create products while store is in single-product mode');
+      throw new Error(
+        'Cannot create products while store is in single-product mode',
+      );
     }
 
     // Map DTO 'name' to Prisma 'title', and auto-generate the required unique slug
@@ -130,7 +132,9 @@ export class ProductsService {
     const isSingle = await this.settings.isSingleProductMode();
     const singleId = await this.settings.getSingleProductId();
     if (isSingle && singleId && singleId !== id) {
-      throw new NotFoundException('Store is in single-product mode; this product cannot be modified');
+      throw new NotFoundException(
+        'Store is in single-product mode; this product cannot be modified',
+      );
     }
 
     const updateData: Prisma.ProductUpdateInput = {};
@@ -166,7 +170,9 @@ export class ProductsService {
     const isSingle = await this.settings.isSingleProductMode();
     const singleId = await this.settings.getSingleProductId();
     if (isSingle && singleId === id) {
-      throw new Error('Cannot delete the primary product while store is in single-product mode');
+      throw new Error(
+        'Cannot delete the primary product while store is in single-product mode',
+      );
     }
     return this.prisma.product.delete({ where: { id } });
   }

@@ -34,7 +34,7 @@ import {
 @Controller('orders')
 @UseGuards(JwtAuthGuard)
 export class OrdersController {
-  constructor(private readonly ordersService: OrdersService) { }
+  constructor(private readonly ordersService: OrdersService) {}
 
   @Post()
   @ApiOperation({
@@ -107,9 +107,17 @@ export class OrdersController {
     summary: 'Update order status (admin)',
     description: 'Update the status of an order. Restricted to Admin roles.',
   })
-  @ApiParam({ name: 'id', description: 'Order ID', example: 'clx_order_id_123' })
+  @ApiParam({
+    name: 'id',
+    description: 'Order ID',
+    example: 'clx_order_id_123',
+  })
   @ApiBody({ type: UpdateOrderStatusDto })
-  @ApiResponse({ status: 200, description: 'Order status updated successfully', type: OrderResponseDto })
+  @ApiResponse({
+    status: 200,
+    description: 'Order status updated successfully',
+    type: OrderResponseDto,
+  })
   @ApiUnauthorizedResponse({ description: 'JWT token is missing or invalid' })
   @ApiNotFoundResponse({ description: 'Order not found' })
   updateStatus(@Param('id') id: string, @Body('status') status: OrderStatus) {

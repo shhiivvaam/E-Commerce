@@ -74,4 +74,4 @@ import { BannersModule } from './banners/banners.module';
     },
   ],
 })
-export class AppModule { }
+export class AppModule {}

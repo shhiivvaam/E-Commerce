@@ -8,4 +8,4 @@ import { RefundsService } from './refunds.service';
   controllers: [OrdersController, RefundsController],
   providers: [OrdersService, RefundsService],
 })
-export class OrdersModule { }
+export class OrdersModule {}
