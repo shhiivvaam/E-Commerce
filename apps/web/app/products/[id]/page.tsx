@@ -10,6 +10,15 @@ import Link from "next/link";
 import { api } from "@/lib/api";
 import toast from "react-hot-toast";
 
+interface Variant {
+    id: string;
+    size?: string;
+    color?: string;
+    sku?: string;
+    stock: number;
+    priceDiff: number;
+}
+
 interface Product {
     id: string;
     title: string;
@@ -19,6 +28,7 @@ interface Product {
     image: string;
     stock: number;
     category?: { name: string; slug: string };
+    variants?: Variant[];
 }
 
 interface Review {
@@ -43,6 +53,7 @@ export default function ProductDetailPage({ params }: { params: { id: string } }
     const [quantity, setQuantity] = useState(1);
     const [wishlisted, setWishlisted] = useState(false);
     const [wishlistLoading, setWishlistLoading] = useState(false);
+    const [selectedVariant, setSelectedVariant] = useState<Variant | null>(null);
 
     const fetchReviews = async () => {
         try {
@@ -67,6 +78,7 @@ export default function ProductDetailPage({ params }: { params: { id: string } }
                     stock: data.stock,
                     image: data.gallery && data.gallery.length > 0 ? data.gallery[0] : "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?q=80&w=1000&auto=format&fit=crop",
                     category: data.category,
+                    variants: data.variants ?? [],
                 });
             } catch (err) {
                 console.error("Failed to load product details", err);
@@ -87,12 +99,14 @@ export default function ProductDetailPage({ params }: { params: { id: string } }
 
     const handleAddToCart = () => {
         if (!product) return;
+        const basePrice = product.discounted ?? product.price;
+        const variantPrice = basePrice + (selectedVariant?.priceDiff ?? 0);
         addItem({
             productId: product.id,
-            title: product.title,
-            price: product.discounted ?? product.price,
+            title: product.title + (selectedVariant ? ` (${[selectedVariant.size, selectedVariant.color].filter(Boolean).join(', ')})` : ''),
+            price: variantPrice,
             quantity,
-            image: product.image
+            image: product.image,
         });
         toast.success("Added to cart!");
     };
@@ -137,8 +151,14 @@ export default function ProductDetailPage({ params }: { params: { id: string } }
     };
 
     const hasReviewed = reviews.some(r => r.user.id === user?.id);
-    const displayPrice = product?.discounted ?? product?.price;
+    const basePrice = product?.discounted ?? product?.price ?? 0;
+    const displayPrice = basePrice + (selectedVariant?.priceDiff ?? 0);
     const originalPrice = product?.discounted ? product.price : undefined;
+    const effectiveStock = selectedVariant ? selectedVariant.stock : (product?.stock ?? 0);
+
+    // Unique sizes and colors from variants
+    const sizes = Array.from(new Set((product?.variants ?? []).map(v => v.size).filter((s): s is string => Boolean(s))));
+    const colors = Array.from(new Set((product?.variants ?? []).map(v => v.color).filter((c): c is string => Boolean(c))));
 
     if (loading) {
         return (
@@ -191,19 +211,56 @@ export default function ProductDetailPage({ params }: { params: { id: string } }
 
                     <p className="mt-6 text-base text-muted-foreground leading-relaxed">{product.description}</p>
 
-                    {product.stock === 0 ? (
+                    {/* Variant Pickers */}
+                    {sizes.length > 0 && (
+                        <div className="mt-6">
+                            <p className="text-sm font-semibold mb-2">Size</p>
+                            <div className="flex flex-wrap gap-2">
+                                {sizes.map(size => (
+                                    <button
+                                        key={size}
+                                        onClick={() => {
+                                            const match = product.variants?.find(v => v.size === size && (!selectedVariant?.color || v.color === selectedVariant.color));
+                                            setSelectedVariant(match ?? product.variants?.find(v => v.size === size) ?? null);
+                                        }}
+                                        className={`px-4 py-1.5 rounded-full border text-sm font-medium transition-all ${selectedVariant?.size === size ? "border-primary bg-primary text-primary-foreground" : "border-border hover:border-primary"}`}
+                                    >{size}</button>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+
+                    {colors.length > 0 && (
+                        <div className="mt-4">
+                            <p className="text-sm font-semibold mb-2">Color</p>
+                            <div className="flex flex-wrap gap-2">
+                                {colors.map(color => (
+                                    <button
+                                        key={color}
+                                        onClick={() => {
+                                            const match = product.variants?.find(v => v.color === color && (!selectedVariant?.size || v.size === selectedVariant.size));
+                                            setSelectedVariant(match ?? product.variants?.find(v => v.color === color) ?? null);
+                                        }}
+                                        className={`px-4 py-1.5 rounded-full border text-sm font-medium transition-all ${selectedVariant?.color === color ? "border-primary bg-primary text-primary-foreground" : "border-border hover:border-primary"}`}
+                                    >{color}</button>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+
+                    {effectiveStock === 0 ? (
                         <p className="mt-4 text-sm font-semibold text-destructive">Out of stock</p>
                     ) : (
-                        <p className="mt-4 text-sm text-muted-foreground">{product.stock} in stock</p>
+                        <p className="mt-4 text-sm text-muted-foreground">{effectiveStock} in stock</p>
                     )}
 
                     <div className="mt-8 flex items-center gap-3">
                         <div className="flex items-center border rounded-md h-12">
                             <button onClick={() => setQuantity(Math.max(1, quantity - 1))} className="px-4 text-lg hover:bg-muted transition-colors rounded-l-md">-</button>
                             <span className="w-12 text-center font-medium">{quantity}</span>
-                            <button onClick={() => setQuantity(Math.min(product.stock, quantity + 1))} className="px-4 text-lg hover:bg-muted transition-colors rounded-r-md">+</button>
+                            <button onClick={() => setQuantity(Math.min(effectiveStock, quantity + 1))} className="px-4 text-lg hover:bg-muted transition-colors rounded-r-md">+</button>
                         </div>
-                        <Button size="lg" className="h-12 flex-1 rounded-full shadow-lg" onClick={handleAddToCart} disabled={product.stock === 0}>
+                        <Button size="lg" className="h-12 flex-1 rounded-full shadow-lg" onClick={handleAddToCart} disabled={effectiveStock === 0}>
                             <ShoppingCart className="h-5 w-5 mr-2" /> Add to Cart
                         </Button>
                         <Button
