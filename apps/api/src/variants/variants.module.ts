@@ -4,9 +4,9 @@ import { VariantsService } from './variants.service';
 import { PrismaModule } from '../prisma/prisma.module';
 
 @Module({
-    imports: [PrismaModule],
-    controllers: [VariantsController],
-    providers: [VariantsService],
-    exports: [VariantsService],
+  imports: [PrismaModule],
+  controllers: [VariantsController],
+  providers: [VariantsService],
+  exports: [VariantsService],
 })
-export class VariantsModule { }
+export class VariantsModule {}

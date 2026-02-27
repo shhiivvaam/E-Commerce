@@ -28,7 +28,7 @@ import { ThrottlerGuard } from '@nestjs/throttler';
 @ApiTags('Auth')
 @Controller('auth')
 export class AuthController {
-  constructor(private readonly authService: AuthService) { }
+  constructor(private readonly authService: AuthService) {}
 
   @Post('login')
   @UseGuards(ThrottlerGuard)
@@ -45,7 +45,9 @@ export class AuthController {
     type: AuthResponseDto,
   })
   @ApiUnauthorizedResponse({ description: 'Invalid email or password' })
-  @ApiTooManyRequestsResponse({ description: 'Too many login attempts. Please wait.' })
+  @ApiTooManyRequestsResponse({
+    description: 'Too many login attempts. Please wait.',
+  })
   async login(@Body() body: LoginDto) {
     const user = await this.authService.validateUser(body.email, body.password);
     if (!user) {
@@ -71,7 +73,9 @@ export class AuthController {
   @ApiBadRequestResponse({
     description: 'Email already in use or invalid data',
   })
-  @ApiTooManyRequestsResponse({ description: 'Too many registration attempts.' })
+  @ApiTooManyRequestsResponse({
+    description: 'Too many registration attempts.',
+  })
   async register(@Body() body: RegisterDto) {
     return this.authService.register(body);
   }
@@ -89,7 +93,9 @@ export class AuthController {
     status: 200,
     description: 'Reset email sent',
   })
-  @ApiTooManyRequestsResponse({ description: 'Too many reset requests. Try again in an hour.' })
+  @ApiTooManyRequestsResponse({
+    description: 'Too many reset requests. Try again in an hour.',
+  })
   async forgotPassword(@Body() body: ForgotPasswordDto) {
     return this.authService.forgotPassword(body);
   }

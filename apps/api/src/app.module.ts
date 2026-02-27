@@ -76,4 +76,4 @@ import { VariantsModule } from './variants/variants.module';
     },
   ],
 })
-export class AppModule { }
+export class AppModule {}
