@@ -76,6 +76,12 @@ export default function ProductDetailPage({ params }: { params: { id: string } }
         };
         fetchProduct();
         fetchReviews();
+
+        if (isAuthenticated) {
+            api.get(`/wishlist/${params.id}/check`)
+                .then(({ data }) => setWishlisted(data.inWishlist))
+                .catch(() => { });
+        }
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [params.id]);
 
@@ -191,7 +197,7 @@ export default function ProductDetailPage({ params }: { params: { id: string } }
                         <p className="mt-4 text-sm text-muted-foreground">{product.stock} in stock</p>
                     )}
 
-                    <div className="mt-8 flex items-center gap-4">
+                    <div className="mt-8 flex items-center gap-3">
                         <div className="flex items-center border rounded-md h-12">
                             <button onClick={() => setQuantity(Math.max(1, quantity - 1))} className="px-4 text-lg hover:bg-muted transition-colors rounded-l-md">-</button>
                             <span className="w-12 text-center font-medium">{quantity}</span>
@@ -199,6 +205,16 @@ export default function ProductDetailPage({ params }: { params: { id: string } }
                         </div>
                         <Button size="lg" className="h-12 flex-1 rounded-full shadow-lg" onClick={handleAddToCart} disabled={product.stock === 0}>
                             <ShoppingCart className="h-5 w-5 mr-2" /> Add to Cart
+                        </Button>
+                        <Button
+                            size="lg"
+                            variant="outline"
+                            className="h-12 w-12 rounded-full p-0 flex-shrink-0"
+                            onClick={handleToggleWishlist}
+                            disabled={wishlistLoading}
+                            title={wishlisted ? "Remove from wishlist" : "Add to wishlist"}
+                        >
+                            <Heart className={`h-5 w-5 transition-colors ${wishlisted ? "fill-red-500 text-red-500" : "text-muted-foreground"}`} />
                         </Button>
                     </div>
 
