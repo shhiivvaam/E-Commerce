@@ -19,8 +19,8 @@ COPY . .
 # Install ALL dependencies at the root
 RUN if [ -f package-lock.json ]; then npm ci; else npm install; fi
 
-# Generate Prisma client natively using workspace exec or npx
-RUN npx --workspace=apps/api prisma generate --schema=apps/api/prisma/schema.prisma
+# Generate Prisma client natively (using direct binary path to avoid workspace resolution issues)
+RUN ./apps/api/node_modules/.bin/prisma generate --schema=apps/api/prisma/schema.prisma
 
 # Compile TypeScript using npm workspace command
 RUN npm run build -w apps/api
