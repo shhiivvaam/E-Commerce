@@ -9,12 +9,21 @@ import { RoleType } from '@prisma/client';
 
 @Injectable()
 export class UsersService {
-  constructor(private prisma: PrismaService) {}
+  constructor(private prisma: PrismaService) { }
 
   async findOne(id: string) {
     const user = await this.prisma.user.findUnique({
       where: { id },
-      include: { role: true },
+      include: {
+        role: true,
+        orders: {
+          take: 10,
+          orderBy: { createdAt: 'desc' },
+          include: { items: true }
+        },
+        addresses: true,
+        _count: { select: { orders: true } }
+      },
     });
 
     if (!user) throw new NotFoundException('User not found');
@@ -52,11 +61,11 @@ export class UsersService {
     const skip = (page - 1) * limit;
     const where = search
       ? {
-          OR: [
-            { name: { contains: search, mode: 'insensitive' as const } },
-            { email: { contains: search, mode: 'insensitive' as const } },
-          ],
-        }
+        OR: [
+          { name: { contains: search, mode: 'insensitive' as const } },
+          { email: { contains: search, mode: 'insensitive' as const } },
+        ],
+      }
       : {};
 
     const [users, total] = await Promise.all([
