@@ -2,6 +2,7 @@ import {
   Injectable,
   NotFoundException,
   BadRequestException,
+  ForbiddenException,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { OrderStatus } from '@prisma/client';
@@ -9,7 +10,7 @@ import { CreateOrderDto } from './dto/order.dto';
 
 @Injectable()
 export class OrdersService {
-  constructor(private prisma: PrismaService) {}
+  constructor(private prisma: PrismaService) { }
 
   async create(userId: string, data: CreateOrderDto) {
     if (!data.items || data.items.length === 0) {
@@ -138,6 +139,37 @@ export class OrdersService {
     return this.prisma.order.update({
       where: { id },
       data: { status },
+    });
+  }
+
+  async cancelOrder(id: string, userId: string) {
+    const order = await this.prisma.order.findFirst({
+      where: { id, userId },
+      include: { items: true },
+    });
+
+    if (!order) throw new NotFoundException('Order not found');
+
+    if (!['PENDING', 'PROCESSING'].includes(order.status)) {
+      throw new ForbiddenException(
+        `Cannot cancel an order with status: ${order.status}. Only PENDING or PROCESSING orders can be cancelled.`,
+      );
+    }
+
+    // Restore stock for each item in a transaction
+    return this.prisma.$transaction(async (tx) => {
+      for (const item of order.items) {
+        await tx.product.update({
+          where: { id: item.productId },
+          data: { stock: { increment: item.quantity } },
+        });
+      }
+
+      return tx.order.update({
+        where: { id },
+        data: { status: OrderStatus.CANCELLED },
+        include: { items: true },
+      });
     });
   }
 }

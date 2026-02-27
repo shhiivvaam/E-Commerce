@@ -68,6 +68,17 @@ export default function OrdersPage() {
         }
     }, [searchParams]);
 
+    const handleCancel = async (orderId: string) => {
+        if (!confirm('Are you sure you want to cancel this order?')) return;
+        try {
+            await api.patch(`/orders/${orderId}/cancel`);
+            setOrders(prev => prev.map(o => o.id === orderId ? { ...o, status: 'CANCELLED' } : o));
+            toast.success('Order cancelled. Stock has been restored.');
+        } catch {
+            toast.error('Failed to cancel order. It may already be shipped.');
+        }
+    };
+
     if (isLoading) {
         return <div className="p-8 text-center text-muted-foreground animate-pulse">Loading orders...</div>;
     }
@@ -110,11 +121,19 @@ export default function OrdersPage() {
                                 <p className="text-sm font-medium text-muted-foreground">Total Amount</p>
                                 <p className="font-bold text-lg">${order.totalAmount.toFixed(2)}</p>
                             </div>
-                            <div className="sm:text-right">
+                            <div className="sm:text-right flex flex-col sm:items-end gap-2">
                                 <div className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold ${getStatusColor(order.status)}`}>
                                     {getStatusIcon(order.status)}
                                     {order.status}
                                 </div>
+                                {['PENDING', 'PROCESSING'].includes(order.status) && (
+                                    <button
+                                        onClick={() => handleCancel(order.id)}
+                                        className="text-xs text-destructive hover:underline font-medium transition-colors"
+                                    >
+                                        Cancel Order
+                                    </button>
+                                )}
                             </div>
                         </div>
 

@@ -34,7 +34,7 @@ import {
 @Controller('orders')
 @UseGuards(JwtAuthGuard)
 export class OrdersController {
-  constructor(private readonly ordersService: OrdersService) {}
+  constructor(private readonly ordersService: OrdersService) { }
 
   @Post()
   @ApiOperation({
@@ -122,5 +122,21 @@ export class OrdersController {
   @ApiNotFoundResponse({ description: 'Order not found' })
   updateStatus(@Param('id') id: string, @Body('status') status: OrderStatus) {
     return this.ordersService.updateStatus(id, status);
+  }
+
+  @Patch(':id/cancel')
+  @ApiOperation({
+    summary: 'Cancel an order',
+    description:
+      'Cancel a PENDING or PROCESSING order. Stock is restored automatically.',
+  })
+  @ApiParam({ name: 'id', description: 'Order ID' })
+  @ApiResponse({ status: 200, description: 'Order cancelled successfully' })
+  @ApiNotFoundResponse({ description: 'Order not found' })
+  cancelOrder(
+    @Request() req: { user: { id: string; userId?: string } },
+    @Param('id') id: string,
+  ) {
+    return this.ordersService.cancelOrder(id, req.user.userId || req.user.id);
   }
 }
