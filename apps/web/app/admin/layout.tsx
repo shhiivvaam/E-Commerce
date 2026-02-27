@@ -2,15 +2,16 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, Package, Users, ShoppingCart, Settings, LogOut } from "lucide-react";
+import { LayoutDashboard, Package, Users, ShoppingCart, Tag, Ticket, LogOut } from "lucide-react";
 import { useAuthStore } from "@/store/useAuthStore";
 
 const navigation = [
     { name: 'Overview', href: '/admin', icon: LayoutDashboard },
     { name: 'Products', href: '/admin/products', icon: Package },
     { name: 'Orders', href: '/admin/orders', icon: ShoppingCart },
+    { name: 'Categories', href: '/admin/categories', icon: Tag },
+    { name: 'Coupons', href: '/admin/coupons', icon: Ticket },
     { name: 'Customers', href: '/admin/customers', icon: Users },
-    { name: 'Settings', href: '/admin/settings', icon: Settings },
 ];
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
@@ -32,8 +33,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                                 key={item.name}
                                 href={item.href}
                                 className={`flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-all ${isActive
-                                        ? "bg-primary text-primary-foreground"
-                                        : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+                                    ? "bg-primary text-primary-foreground"
+                                    : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
                                     }`}
                             >
                                 <item.icon className="h-5 w-5" />
