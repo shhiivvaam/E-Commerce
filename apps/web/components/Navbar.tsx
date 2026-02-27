@@ -30,7 +30,7 @@ export function Navbar() {
     const handleSearchSubmit = (e: React.FormEvent) => {
         e.preventDefault();
         if (searchQuery.trim()) {
-            router.push(`/products?search=${encodeURIComponent(searchQuery.trim())}`);
+            router.push(`/search?q=${encodeURIComponent(searchQuery.trim())}`);
             setSearchOpen(false);
             setSearchQuery("");
         }
@@ -49,8 +49,8 @@ export function Navbar() {
                 }`}
         >
             <div className={`container mx-auto max-w-7xl h-20 px-8 flex items-center justify-between transition-all duration-500 rounded-[32px] border-2 shadow-2xl relative overflow-hidden ${scrolled
-                ? "bg-white/80 dark:bg-black/80 backdrop-blur-3xl border-slate-100/50 dark:border-slate-800/50 shadow-slate-200/40 dark:shadow-none"
-                : "bg-white dark:bg-slate-900 border-transparent shadow-transparent"
+                ? "bg-white/90 dark:bg-[#050505]/90 backdrop-blur-3xl border-slate-100/50 dark:border-slate-800/50 shadow-slate-200/40 dark:shadow-none"
+                : "bg-white dark:bg-[#0a0a0a] border-transparent shadow-transparent"
                 }`}>
                 {/* Brand Layer */}
                 <div className="flex items-center gap-12 z-10">
@@ -87,14 +87,14 @@ export function Navbar() {
                             exit={{ opacity: 0, scale: 0.95 }}
                             className="absolute inset-0 bg-white dark:bg-black z-[20] flex items-center px-12"
                         >
-                            <Search className="h-5 w-5 text-slate-300 mr-4" />
+                            <Search className="h-5 w-5 text-slate-300 dark:text-slate-700 mr-4" />
                             <form onSubmit={handleSearchSubmit} className="flex-1">
                                 <input
                                     ref={inputRef}
                                     value={searchQuery}
                                     onChange={e => setSearchQuery(e.target.value)}
                                     placeholder="Enter search parameters..."
-                                    className="w-full bg-transparent h-12 text-sm font-black uppercase tracking-widest outline-none placeholder:text-slate-200"
+                                    className="w-full bg-transparent h-12 text-sm font-black uppercase tracking-widest outline-none placeholder:text-slate-200 dark:placeholder:text-slate-800 text-black dark:text-white"
                                     onBlur={() => { if (!searchQuery) setSearchOpen(false); }}
                                 />
                             </form>
@@ -113,36 +113,36 @@ export function Navbar() {
                         variant="ghost"
                         size="icon"
                         onClick={() => { setSearchOpen(true); setTimeout(() => inputRef.current?.focus(), 100); }}
-                        className="rounded-xl h-12 w-12 hover:bg-slate-50 dark:hover:bg-slate-800"
+                        className="rounded-xl h-12 w-12 hover:bg-slate-50 dark:hover:bg-slate-900 transition-colors"
                     >
                         <Search className="h-5 w-5" />
                     </Button>
 
                     <Link href="/cart">
-                        <Button variant="ghost" size="icon" className="relative h-12 w-12 rounded-xl hover:bg-slate-50 group">
+                        <Button variant="ghost" size="icon" className="relative h-12 w-12 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-900 group transition-colors">
                             <ShoppingCart className="h-5 w-5" />
                             {cartCount > 0 && (
-                                <span className="absolute top-2 right-2 flex h-4 w-4 items-center justify-center rounded-full bg-black text-[9px] font-black text-white group-hover:scale-110 transition-transform">
+                                <span className="absolute top-2 right-2 flex h-4 w-4 items-center justify-center rounded-full bg-black dark:bg-white text-[9px] font-black text-white dark:text-black group-hover:scale-110 transition-transform">
                                     {cartCount}
                                 </span>
                             )}
                         </Button>
                     </Link>
 
-                    <div className="h-8 w-px bg-slate-100 mx-2" />
+                    <div className="h-8 w-px bg-slate-100 dark:bg-slate-800 mx-2" />
 
                     {isAuthenticated ? (
                         <div className="flex items-center gap-2">
                             {isAdmin && (
                                 <Link href="/admin">
-                                    <Button variant="ghost" size="sm" className="hidden md:flex h-12 rounded-xl gap-2 font-black uppercase text-[10px] tracking-widest hover:bg-primary/5 hover:text-primary transition-colors pr-4">
+                                    <Button variant="ghost" size="sm" className="hidden md:flex h-12 rounded-xl gap-2 font-black uppercase text-[10px] tracking-widest hover:bg-primary/5 dark:hover:bg-primary/10 hover:text-primary transition-colors pr-4">
                                         <div className="h-2 w-2 rounded-full bg-primary animate-pulse" />
                                         Administrative Port
                                     </Button>
                                 </Link>
                             )}
                             <Link href="/dashboard">
-                                <Button variant="ghost" size="icon" className="h-12 w-12 rounded-xl hover:bg-slate-50">
+                                <Button variant="ghost" size="icon" className="h-12 w-12 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-900 transition-colors">
                                     <User className="h-5 w-5" />
                                 </Button>
                             </Link>
@@ -150,17 +150,17 @@ export function Navbar() {
                                 variant="ghost"
                                 size="icon"
                                 onClick={() => logout()}
-                                className="h-12 w-12 rounded-xl text-rose-500 hover:bg-rose-50 hover:text-rose-600"
+                                className="h-12 w-12 rounded-xl text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/20 hover:text-rose-600 transition-colors"
                             >
                                 <LogOut className="h-5 w-5" />
                             </Button>
                         </div>
                     ) : (
                         <div className="flex items-center gap-3">
-                            <Link href="/auth/login">
+                            <Link href="/login">
                                 <Button variant="ghost" className="h-12 px-6 rounded-xl font-black uppercase text-[10px] tracking-widest">Sign In</Button>
                             </Link>
-                            <Link href="/auth/register">
+                            <Link href="/register">
                                 <Button className="h-12 px-8 rounded-xl font-black uppercase text-[10px] tracking-widest shadow-xl shadow-primary/20">Get Started</Button>
                             </Link>
                         </div>

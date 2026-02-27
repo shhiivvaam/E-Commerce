@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { api } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Tag, Plus, Trash2, Pencil, X, Package, Layers, Hash, Activity } from "lucide-react";
+import { Tag, Plus, Trash2, Pencil, X, Package, Layers, Hash, Activity, Zap } from "lucide-react";
 import toast from "react-hot-toast";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -83,47 +83,52 @@ export default function AdminCategoriesPage() {
     const stats = {
         total: categories.length,
         avgDensity: categories.length > 0 ? (categories.reduce((s, c) => s + (c._count?.products || 0), 0) / categories.length).toFixed(1) : 0,
-        unallocated: 0 // In a real app we'd fetch this
     };
 
     return (
-        <div className="space-y-10 pb-12">
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
-                <div>
-                    <h2 className="text-4xl font-black tracking-tight uppercase text-foreground">Taxonomy Engine</h2>
-                    <p className="text-muted-foreground mt-2 text-lg font-medium">Architect your catalog hierarchy and navigational clusters.</p>
+        <div className="space-y-16 pb-20">
+            <header className="flex flex-col md:flex-row justify-between items-start md:items-end gap-8">
+                <div className="space-y-6">
+                    <div className="flex items-center gap-4">
+                        <span className="h-px w-12 bg-black/10 dark:bg-white/10" />
+                        <span className="text-[10px] font-black uppercase tracking-[0.4em] text-primary">Taxonomy Engine</span>
+                    </div>
+                    <h2 className="text-5xl md:text-7xl font-black tracking-tighter uppercase leading-none text-black dark:text-white">Classification <br />Clusters</h2>
+                    <p className="text-lg font-medium text-slate-400 dark:text-slate-500 italic max-w-xl">Architect your catalog hierarchy and navigational clusters across the ecosystem.</p>
                 </div>
-                <Button
-                    onClick={() => setShowForm(true)}
-                    disabled={showForm}
-                    className="gap-3 shrink-0 rounded-2xl h-12 px-8 shadow-xl shadow-primary/20 font-black uppercase tracking-widest text-xs transition-transform active:scale-95"
-                >
-                    <Plus className="h-4 w-4" /> Initialize Node
-                </Button>
-            </div>
+                <div className="flex gap-4 pt-4">
+                    <Button
+                        onClick={() => setShowForm(true)}
+                        disabled={showForm}
+                        className="rounded-[24px] h-16 px-10 gap-4 shadow-2xl shadow-primary/20 font-black uppercase tracking-[0.2em] text-[11px] active:scale-95 transition-all"
+                    >
+                        <Plus className="h-5 w-5" /> Initialize Node
+                    </Button>
+                </div>
+            </header>
 
             {/* Taxonomy States */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
                 {[
-                    { label: "Collection Nodes", value: stats.total, icon: Layers, color: "bg-blue-600" },
-                    { label: "Product Density", value: stats.avgDensity, icon: Activity, color: "bg-emerald-600", sub: "Items / Node" },
-                    { label: "Operational Integrity", value: "Optimal", icon: Tag, color: "bg-indigo-600" },
+                    { label: "Collection Nodes", value: stats.total, icon: Layers, color: "bg-blue-600 dark:bg-blue-500" },
+                    { label: "Product Density", value: stats.avgDensity, icon: Activity, color: "bg-emerald-600 dark:bg-emerald-500", sub: "Items / Node" },
+                    { label: "Operational Registry", value: "NOMINAL", icon: Zap, color: "bg-indigo-600 dark:bg-indigo-500" },
                 ].map((stat, i) => (
                     <motion.div
                         initial={{ opacity: 0, scale: 0.95 }}
                         animate={{ opacity: 1, scale: 1 }}
                         transition={{ delay: i * 0.1 }}
                         key={stat.label}
-                        className="bg-card border-2 rounded-[32px] p-8 flex items-center gap-6 shadow-sm"
+                        className="bg-white dark:bg-[#0a0a0a] border-4 border-slate-50 dark:border-slate-800 rounded-[40px] p-10 flex items-center gap-8 shadow-sm transition-all hover:shadow-2xl"
                     >
-                        <div className={`p-4 rounded-[24px] ${stat.color} text-white shadow-xl shadow-black/5`}>
-                            <stat.icon className="h-7 w-7" />
+                        <div className={`h-20 w-20 rounded-[28px] ${stat.color} text-white flex items-center justify-center shadow-2xl`}>
+                            <stat.icon className="h-10 w-10" />
                         </div>
                         <div>
-                            <p className="text-xs font-black text-muted-foreground uppercase tracking-widest">{stat.label}</p>
-                            <div className="flex items-baseline gap-2">
-                                <h4 className="text-3xl font-black">{stat.value}</h4>
-                                {stat.sub && <span className="text-[10px] font-bold text-muted-foreground">{stat.sub}</span>}
+                            <p className="text-[10px] font-black text-slate-300 dark:text-slate-700 uppercase tracking-[0.3em] italic mb-1">{stat.label}</p>
+                            <div className="flex items-baseline gap-3">
+                                <h4 className="text-5xl font-black tracking-tighter text-black dark:text-white">{stat.value}</h4>
+                                {stat.sub && <span className="text-[10px] font-black text-slate-400 dark:text-slate-600 uppercase tracking-widest">{stat.sub}</span>}
                             </div>
                         </div>
                     </motion.div>
@@ -133,52 +138,52 @@ export default function AdminCategoriesPage() {
             <AnimatePresence>
                 {showForm && (
                     <motion.div
-                        initial={{ opacity: 0, y: -20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: -20 }}
+                        initial={{ opacity: 0, y: -20, scale: 0.98 }}
+                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                        exit={{ opacity: 0, y: -20, scale: 0.98 }}
                         className="overflow-hidden"
                     >
-                        <form onSubmit={handleSubmit} className="bg-card border-4 border-primary/10 rounded-[40px] p-8 md:p-10 shadow-2xl space-y-8 relative overflow-hidden">
-                            <div className="absolute top-0 right-0 p-12 opacity-[0.03] pointer-events-none">
-                                <Layers className="h-48 w-48 rotate-12" />
+                        <form onSubmit={handleSubmit} className="bg-white dark:bg-black border-4 border-primary/20 rounded-[56px] p-12 shadow-3xl space-y-12 relative overflow-hidden transition-colors">
+                            <div className="absolute top-0 right-0 p-20 opacity-[0.05] pointer-events-none dark:invert">
+                                <Layers className="h-64 w-64 rotate-12" />
                             </div>
 
                             <div className="flex items-center justify-between relative z-10">
-                                <div className="space-y-1">
-                                    <h3 className="text-2xl font-black uppercase tracking-tighter">{editingId ? "Modify Classification" : "New Taxonomy Entry"}</h3>
-                                    <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Protocol Override Active</p>
+                                <div className="space-y-2">
+                                    <h3 className="text-4xl font-black uppercase tracking-tighter text-black dark:text-white">{editingId ? "Modify Classification" : "New Taxonomy Entry"}</h3>
+                                    <p className="text-[10px] font-black text-primary uppercase tracking-[0.4em] italic">Protocol Override Active</p>
                                 </div>
-                                <Button type="button" variant="outline" size="icon" onClick={cancelForm} className="rounded-2xl h-12 w-12 border-2">
-                                    <X className="h-6 w-6" />
+                                <Button type="button" variant="ghost" size="icon" onClick={cancelForm} className="rounded-2xl h-16 w-16 border-4 border-slate-100 dark:border-slate-800">
+                                    <X className="h-8 w-8 text-black dark:text-white" />
                                 </Button>
                             </div>
 
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 relative z-10">
-                                <div className="space-y-2">
-                                    <label className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground ml-1">Label Designation</label>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-10 relative z-10">
+                                <div className="space-y-4">
+                                    <label className="text-[10px] font-black uppercase tracking-[0.4em] text-slate-400 dark:text-slate-600 ml-2 italic">Label Designation</label>
                                     <Input
                                         required
-                                        placeholder="e.g. Kinetic Wear"
+                                        placeholder="E.G. KINETIC WEAR"
                                         value={formData.name}
                                         onChange={e => setFormData({ ...formData, name: e.target.value })}
-                                        className="rounded-2xl h-14 border-2 text-lg font-bold focus-visible:ring-primary/20"
+                                        className="rounded-[28px] h-20 bg-slate-50 dark:bg-transparent border-4 border-slate-50 dark:border-slate-800 text-xl font-black uppercase tracking-widest focus-visible:ring-primary/20 transition-all px-10"
                                     />
                                 </div>
-                                <div className="space-y-2">
-                                    <label className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground ml-1">Manifest Context (Optional)</label>
+                                <div className="space-y-4">
+                                    <label className="text-[10px] font-black uppercase tracking-[0.4em] text-slate-400 dark:text-slate-600 ml-2 italic">Manifest Context (Optional)</label>
                                     <Input
-                                        placeholder="Define the scope of this collection..."
+                                        placeholder="DEFINE COLLECTIVE SCOPE..."
                                         value={formData.description}
                                         onChange={e => setFormData({ ...formData, description: e.target.value })}
-                                        className="rounded-2xl h-14 border-2 font-medium"
+                                        className="rounded-[28px] h-20 bg-slate-50 dark:bg-transparent border-4 border-slate-50 dark:border-slate-800 text-base font-bold uppercase tracking-widest transition-all px-10"
                                     />
                                 </div>
                             </div>
 
-                            <div className="flex justify-end gap-3 pt-6 border-t-2 border-muted relative z-10">
-                                <Button type="button" variant="ghost" onClick={cancelForm} className="rounded-2xl h-12 px-8 font-black uppercase text-[10px] tracking-widest">Deactivate</Button>
-                                <Button type="submit" disabled={saving} className="rounded-2xl h-12 px-10 shadow-xl shadow-primary/20 font-black uppercase text-[10px] tracking-widest min-w-[180px]">
-                                    {saving ? "Processing..." : editingId ? "Commit Update" : "Initialize Link"}
+                            <div className="flex justify-end gap-6 pt-10 border-t-4 border-slate-50 dark:border-slate-900 relative z-10 mt-10">
+                                <Button type="button" variant="ghost" onClick={cancelForm} className="rounded-[24px] h-16 px-12 font-black uppercase text-[11px] tracking-widest text-slate-400 dark:text-slate-600">Deactivate</Button>
+                                <Button type="submit" disabled={saving} className="rounded-[24px] h-16 px-16 shadow-2xl shadow-primary/30 font-black uppercase text-[11px] tracking-widest min-w-[240px]">
+                                    {saving ? "Processing..." : editingId ? "Commit Update" : "Establish Node"}
                                 </Button>
                             </div>
                         </form>
@@ -186,10 +191,10 @@ export default function AdminCategoriesPage() {
                 )}
             </AnimatePresence>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10">
                 {loading ? (
                     Array.from({ length: 6 }).map((_, i) => (
-                        <div key={i} className="h-48 bg-muted/30 animate-pulse rounded-[32px] border-2" />
+                        <div key={i} className="h-64 bg-slate-50/50 dark:bg-white/5 animate-pulse rounded-[48px] border-4 border-slate-50 dark:border-slate-900" />
                     ))
                 ) : categories.length > 0 ? (
                     categories.map((c, i) => (
@@ -199,51 +204,48 @@ export default function AdminCategoriesPage() {
                             transition={{ delay: i * 0.05 }}
                             layout
                             key={c.id}
-                            className="group p-8 rounded-[32px] border-2 border-slate-100 bg-card transition-all hover:shadow-[0_20px_40px_-15px_rgba(0,0,0,0.05)] hover:border-primary/20 flex flex-col justify-between"
+                            className="group p-10 rounded-[48px] border-4 border-slate-50 dark:border-slate-800 bg-white dark:bg-[#0a0a0a] transition-all hover:shadow-3xl hover:-translate-y-2 hover:border-primary/20 flex flex-col justify-between"
                         >
-                            <div className="flex justify-between items-start">
-                                <div className="space-y-2">
-                                    <div className="flex items-center gap-3">
-                                        <div className="h-10 w-10 bg-slate-50 rounded-xl flex items-center justify-center text-slate-400 group-hover:bg-primary/10 group-hover:text-primary transition-colors">
-                                            <Hash className="h-5 w-5" />
-                                        </div>
-                                        <div>
-                                            <h4 className="text-xl font-black uppercase tracking-tighter text-foreground leading-none">{c.name}</h4>
-                                            <div className="text-[9px] font-mono bg-muted/50 px-2 py-0.5 rounded text-muted-foreground uppercase mt-1 tracking-tighter">REF: {c.slug}</div>
-                                        </div>
+                            <div className="space-y-8">
+                                <div className="flex justify-between items-start">
+                                    <div className="h-16 w-16 bg-slate-50 dark:bg-black rounded-[24px] flex items-center justify-center text-slate-200 dark:text-slate-800 group-hover:bg-primary group-hover:text-white transition-all border-2 border-slate-100 dark:border-slate-800 group-hover:border-primary/20 shadow-inner">
+                                        <Hash className="h-8 w-8" />
                                     </div>
-                                    <p className="text-xs text-muted-foreground font-medium line-clamp-2 leading-relaxed mt-2 italic">{c.description || "No metadata description provided."}</p>
+                                    <div className="flex gap-3">
+                                        <Button variant="ghost" size="icon" onClick={() => startEdit(c)} className="h-12 w-12 rounded-2xl border-2 border-slate-50 dark:border-slate-800 hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-all">
+                                            <Pencil className="h-5 w-5" />
+                                        </Button>
+                                        <Button variant="ghost" size="icon" onClick={() => handleDelete(c.id)} className="h-12 w-12 rounded-2xl border-2 border-slate-50 dark:border-slate-800 text-slate-300 dark:text-slate-700 hover:bg-rose-600 hover:text-white dark:hover:bg-rose-500 hover:border-transparent transition-all">
+                                            <Trash2 className="h-5 w-5" />
+                                        </Button>
+                                    </div>
                                 </div>
-                                <div className="flex gap-2">
-                                    <Button variant="outline" size="icon" onClick={() => startEdit(c)} className="h-10 w-10 rounded-xl border-2 hover:bg-primary/10 hover:border-primary/20 hover:text-primary transition-all active:scale-90">
-                                        <Pencil className="h-4 w-4" />
-                                    </Button>
-                                    <Button variant="outline" size="icon" onClick={() => handleDelete(c.id)} className="h-10 w-10 rounded-xl border-2 text-muted-foreground hover:bg-rose-50 hover:border-rose-100 hover:text-rose-600 transition-all active:scale-90">
-                                        <Trash2 className="h-4 w-4" />
-                                    </Button>
+                                <div className="space-y-3">
+                                    <h4 className="text-2xl font-black uppercase tracking-tighter text-black dark:text-white leading-none">{c.name}</h4>
+                                    <div className="inline-block text-[9px] font-black bg-slate-50 dark:bg-black px-3 py-1 rounded-full text-slate-300 dark:text-slate-700 uppercase tracking-widest italic border-2 border-slate-100 dark:border-slate-900">REF: {c.slug}</div>
+                                    <p className="text-xs text-slate-400 dark:text-slate-600 font-medium line-clamp-2 leading-relaxed mt-4 italic">{c.description || "No metadata description provided for this node."}</p>
                                 </div>
                             </div>
 
-                            <div className="mt-8 flex items-center justify-between">
-                                <div className="flex items-center gap-2.5 text-[10px] font-black text-muted-foreground bg-muted/10 px-4 py-2 rounded-2xl border-2 border-transparent group-hover:border-primary/5 transition-all uppercase tracking-widest">
-                                    <Package className="h-3.5 w-3.5" />
+                            <div className="mt-10 flex items-center justify-between border-t-2 border-slate-50 dark:border-slate-900 pt-8">
+                                <div className="flex items-center gap-3 text-[10px] font-black text-slate-300 dark:text-slate-700 uppercase tracking-[0.2em] italic">
+                                    <Package className="h-4 w-4 text-primary opacity-50" />
                                     {c._count?.products || 0} Registered Assets
                                 </div>
                                 <div className="opacity-0 group-hover:opacity-100 transition-opacity">
-                                    <div className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
+                                    <div className="h-2.5 w-2.5 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_15px_rgba(16,185,129,0.5)]" />
                                 </div>
                             </div>
                         </motion.div>
                     ))
                 ) : (
-                    <div className="col-span-full py-40 text-center bg-muted/5 rounded-[48px] border-4 border-dashed border-muted relative overflow-hidden">
-                        <Tag className="h-20 w-20 mx-auto text-muted-foreground mb-6 opacity-10" />
-                        <h3 className="text-2xl font-black uppercase tracking-widest text-muted-foreground/50">Taxonomy Void</h3>
-                        <p className="text-sm font-bold text-muted-foreground/40 mt-3 max-w-xs mx-auto italic uppercase tracking-tighter">No active classification nodes detected in the current directory.</p>
+                    <div className="col-span-full py-60 text-center bg-slate-50/30 dark:bg-white/5 rounded-[64px] border-4 border-dashed border-slate-100 dark:border-slate-900 relative overflow-hidden transition-colors">
+                        <Tag className="h-32 w-32 mx-auto text-slate-100 dark:text-slate-900 mb-10 opacity-50" />
+                        <h3 className="text-4xl font-black uppercase tracking-[0.2em] text-slate-200 dark:text-slate-800">Taxonomy Void</h3>
+                        <p className="text-sm font-black text-slate-300 dark:text-slate-700 mt-4 max-w-sm mx-auto italic uppercase tracking-widest leading-relaxed">No active classification nodes detected in the current directory stream.</p>
                         <Button
-                            variant="secondary"
                             onClick={() => setShowForm(true)}
-                            className="mt-10 rounded-2xl h-14 px-10 font-black uppercase tracking-widest text-xs shadow-xl"
+                            className="mt-12 rounded-[28px] h-20 px-16 font-black uppercase tracking-[0.2em] text-[11px] shadow-3xl"
                         >
                             Establish First Node
                         </Button>
