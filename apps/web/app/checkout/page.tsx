@@ -5,7 +5,7 @@ import { useCartStore } from "@/store/useCartStore";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { motion, AnimatePresence } from "framer-motion";
-import { CheckCircle2, CreditCard, MapPin, Package, Lock, Plus, Tag, X } from "lucide-react";
+import { CheckCircle2, CreditCard, MapPin, Package, Lock, Plus, Tag, X, ChevronRight, ShieldCheck, Zap, ArrowRight, ShieldAlert } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
@@ -20,9 +20,9 @@ interface AppliedCoupon {
 }
 
 const steps = [
-    { id: 1, name: "Shipping Address", icon: MapPin },
-    { id: 2, name: "Payment Method", icon: CreditCard },
-    { id: 3, name: "Review Order", icon: Package },
+    { id: 1, name: "Logistics", icon: MapPin, label: "Shipping Node" },
+    { id: 2, name: "Protocol", icon: CreditCard, label: "Payment Gateway" },
+    { id: 3, name: "Validate", icon: Package, label: "Manifest Review" },
 ];
 
 interface SavedAddress {
@@ -70,10 +70,9 @@ export default function CheckoutPage() {
         try {
             const { data } = await api.post('/coupons/apply', { code: couponCode.trim(), cartTotal: total });
             setAppliedCoupon(data);
-            toast.success(`Coupon applied! You saved $${data.discountAmount.toFixed(2)}`);
-        } catch (err: unknown) {
-            const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message || 'Invalid coupon code';
-            toast.error(msg);
+            toast.success(`Coupon authorized: -${data.discountAmount.toFixed(2)} Credits`);
+        } catch (err: any) {
+            toast.error(err.response?.data?.message || 'Invalid coupon signature');
         } finally {
             setIsApplyingCoupon(false);
         }
@@ -96,7 +95,7 @@ export default function CheckoutPage() {
                     setIsAddingNew(true);
                 }
             } catch (error) {
-                console.error("Could not fetch addresses", error);
+                console.error("Address registry retrieval failure", error);
                 setIsAddingNew(true);
             }
         };
@@ -105,11 +104,15 @@ export default function CheckoutPage() {
 
     if (items.length === 0 && currentStep !== 4) {
         return (
-            <div className="container mx-auto min-h-[60vh] flex flex-col items-center justify-center text-center px-4">
-                <Package className="h-16 w-16 text-muted-foreground mb-4" />
-                <h2 className="text-2xl font-bold mb-2">Cart is empty</h2>
-                <p className="text-muted-foreground mb-6">You need items in your cart to checkout.</p>
-                <Link href="/products"><Button>Go Shopping</Button></Link>
+            <div className="container mx-auto min-h-[70vh] flex flex-col items-center justify-center text-center px-8 bg-white">
+                <div className="h-20 w-20 bg-slate-50 border-2 border-slate-100 rounded-2xl flex items-center justify-center mb-8 text-slate-200">
+                    <ShieldAlert className="h-10 w-10" />
+                </div>
+                <h2 className="text-4xl font-black uppercase tracking-tighter">Manifest Empty.</h2>
+                <p className="text-slate-400 font-medium mt-4 italic">Acquisition protocol requires active assets in current registry.</p>
+                <Link href="/products" className="mt-8">
+                    <Button size="lg" className="rounded-2xl h-14 px-10 font-black uppercase tracking-widest text-[10px]">Return to Archives</Button>
+                </Link>
             </div>
         );
     }
@@ -120,7 +123,6 @@ export default function CheckoutPage() {
     const handlePlaceOrder = async () => {
         setIsProcessing(true);
         try {
-            // 1. Create Order
             const orderPayload: Record<string, unknown> = {
                 items: items.map(i => ({ productId: i.productId, quantity: i.quantity })),
                 ...(appliedCoupon && { couponId: appliedCoupon.couponId }),
@@ -141,10 +143,8 @@ export default function CheckoutPage() {
             const orderRes = await api.post('/orders', orderPayload);
             const orderId = orderRes.data.id;
 
-            // 2. Clear Local Cart since the order was successfully created
             await clearCart();
 
-            // 3. Initiate Checkout Session
             const checkoutPayload = {
                 orderId,
                 items: items.map(i => ({
@@ -159,17 +159,15 @@ export default function CheckoutPage() {
 
             const paymentRes = await api.post('/payments/checkout', checkoutPayload);
 
-            // Redirect to Stripe or external handler
             if (paymentRes.data.url) {
                 window.location.href = paymentRes.data.url;
             } else {
-                // Fallback to step 4 if no URL is provided
                 setCurrentStep(4);
             }
 
         } catch (error) {
-            console.error("Order failed", error);
-            toast.error("Failed to place order. Please check your information and try again.");
+            console.error("Acquisition failure", error);
+            toast.error("Protocol rejection. Verify data integrity and re-initialize.");
             setIsProcessing(false);
         }
     };
@@ -185,228 +183,308 @@ export default function CheckoutPage() {
     };
 
     return (
-        <div className="container mx-auto px-4 py-12 max-w-4xl bg-muted/10 min-h-[80vh]">
-            {/* Progress Stepper */}
-            {currentStep < 4 && (
-                <div className="mb-12">
-                    <div className="flex justify-between items-center relative">
-                        <div className="absolute left-0 top-1/2 -translate-y-1/2 w-full h-1 bg-muted -z-10 rounded-full" />
-                        <div
-                            className="absolute left-0 top-1/2 -translate-y-1/2 h-1 bg-primary -z-10 transition-all duration-500 rounded-full"
-                            style={{ width: `${((currentStep - 1) / 2) * 100}%` }}
-                        />
-
-                        {steps.map((step) => {
-                            const isActive = currentStep >= step.id;
-                            return (
-                                <div key={step.id} className="flex flex-col items-center gap-2 bg-background p-2">
-                                    <div className={`h-10 w-10 rounded-full flex items-center justify-center border-2 transition-colors ${isActive ? "border-primary bg-primary text-primary-foreground" : "border-muted bg-background text-muted-foreground"
-                                        }`}>
-                                        {currentStep > step.id ? <CheckCircle2 className="h-5 w-5" /> : <step.icon className="h-5 w-5" />}
-                                    </div>
-                                    <span className={`text-xs font-semibold ${isActive ? "text-foreground" : "text-muted-foreground"}`}>
-                                        {step.name}
-                                    </span>
-                                </div>
-                            );
-                        })}
+        <div className="bg-white min-h-screen pb-40">
+            {/* Architectural Header */}
+            <header className="pt-20 pb-12 border-b-2 border-slate-50">
+                <div className="container mx-auto px-8 flex flex-col md:flex-row justify-between items-start md:items-end gap-10">
+                    <div className="space-y-4">
+                        <span className="text-[10px] font-black uppercase text-primary tracking-[0.4em]">Finalization Stage</span>
+                        <h1 className="text-6xl md:text-8xl font-black uppercase tracking-tighter leading-none">Acquisition <br />Protocol</h1>
+                        <p className="text-slate-400 font-medium text-lg italic mt-4 max-w-lg leading-tight uppercase tracking-tighter">Securely transferring ownership of selected assets to your physical location.</p>
                     </div>
+
+                    {/* Progress Stepper */}
+                    {currentStep < 4 && (
+                        <div className="flex gap-4 md:gap-8 pb-4 w-full md:w-auto overflow-x-auto no-scrollbar">
+                            {steps.map((step) => {
+                                const isActive = currentStep >= step.id;
+                                const isDone = currentStep > step.id;
+                                return (
+                                    <div key={step.id} className="flex items-center gap-4 shrink-0">
+                                        <div className={`h-14 w-14 rounded-[20px] border-2 flex items-center justify-center transition-all ${isActive ? "bg-black border-black text-white shadow-xl shadow-black/10" : "bg-white border-slate-100 text-slate-300"}`}>
+                                            {isDone ? <CheckCircle2 className="h-6 w-6" /> : <step.icon className="h-6 w-6" />}
+                                        </div>
+                                        <div className="hidden xl:block">
+                                            <p className={`text-[10px] font-black uppercase tracking-widest ${isActive ? 'text-black' : 'text-slate-300'}`}>{step.name}</p>
+                                            <p className="text-[9px] font-bold text-slate-300 uppercase tracking-tighter italic">{step.label}</p>
+                                        </div>
+                                        {step.id < 3 && <div className="hidden lg:block h-px w-12 bg-slate-100" />}
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    )}
                 </div>
-            )}
+            </header>
 
-            {/* Steps Content */}
-            <AnimatePresence mode="wait">
-                <motion.div
-                    key={currentStep}
-                    initial={{ opacity: 0, x: 20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    exit={{ opacity: 0, x: -20 }}
-                    transition={{ duration: 0.2 }}
-                    className="bg-card border shadow-sm rounded-xl p-6 sm:p-10"
-                >
-                    {currentStep === 1 && (
-                        <div className="space-y-6">
-                            <h2 className="text-2xl font-bold">Shipping Details</h2>
+            <div className="container px-8 py-20 mx-auto max-w-7xl">
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-20">
+                    {/* Execution Panel */}
+                    <div className="lg:col-span-12 xl:col-span-8">
+                        <AnimatePresence mode="wait">
+                            <motion.div
+                                key={currentStep}
+                                initial={{ opacity: 0, x: 20 }}
+                                animate={{ opacity: 1, x: 0 }}
+                                exit={{ opacity: 0, x: -20 }}
+                                transition={{ duration: 0.4 }}
+                                className="space-y-12"
+                            >
+                                {currentStep === 1 && (
+                                    <div className="space-y-10">
+                                        <div className="space-y-2">
+                                            <h2 className="text-3xl font-black uppercase tracking-tighter">Physical Logistics</h2>
+                                            <p className="text-xs font-bold text-slate-300 uppercase tracking-widest italic">Destination node identification</p>
+                                        </div>
 
-                            {savedAddresses.length > 0 && !isAddingNew && (
-                                <div className="space-y-4">
-                                    <p className="text-sm font-medium">Select a Saved Address</p>
-                                    <div className="grid gap-3 sm:grid-cols-2">
-                                        {savedAddresses.map((addr) => (
-                                            <div
-                                                key={addr.id}
-                                                onClick={() => setSelectedAddressId(addr.id)}
-                                                className={`p-4 rounded-xl border cursor-pointer transition-colors ${selectedAddressId === addr.id ? 'border-primary bg-primary/5 ring-1 ring-primary' : 'hover:border-primary/50'}`}
-                                            >
-                                                <div className="flex items-center gap-2 mb-2">
-                                                    <div className={`h-4 w-4 rounded-full border flex items-center justify-center ${selectedAddressId === addr.id ? 'border-primary' : 'border-muted-foreground'}`}>
-                                                        {selectedAddressId === addr.id && <div className="h-2 w-2 rounded-full bg-primary" />}
-                                                    </div>
-                                                    <span className="font-semibold text-sm">Delivery Address</span>
+                                        {savedAddresses.length > 0 && !isAddingNew && (
+                                            <div className="space-y-6">
+                                                <div className="grid gap-6 sm:grid-cols-2">
+                                                    {savedAddresses.map((addr) => (
+                                                        <motion.div
+                                                            whileHover={{ scale: 1.02 }}
+                                                            whileTap={{ scale: 0.98 }}
+                                                            key={addr.id}
+                                                            onClick={() => setSelectedAddressId(addr.id)}
+                                                            className={`p-8 rounded-[32px] border-2 cursor-pointer transition-all ${selectedAddressId === addr.id ? 'border-black bg-slate-50 shadow-xl' : 'border-slate-100 hover:border-slate-200 opacity-60'}`}
+                                                        >
+                                                            <div className="flex justify-between items-start mb-6">
+                                                                <div className={`h-10 w-10 rounded-xl flex items-center justify-center border-2 ${selectedAddressId === addr.id ? 'bg-black text-white border-black' : 'border-slate-100 text-slate-200'}`}>
+                                                                    <MapPin className="h-5 w-5" />
+                                                                </div>
+                                                                {selectedAddressId === addr.id && <div className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse mt-4" />}
+                                                            </div>
+                                                            <p className="text-lg font-black uppercase tracking-tight">{addr.street}</p>
+                                                            <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mt-1 italic">{addr.city}, {addr.state} {addr.zipCode}</p>
+                                                        </motion.div>
+                                                    ))}
                                                 </div>
-                                                <p className="text-sm">{addr.street}</p>
-                                                <p className="text-sm text-muted-foreground">{addr.city}, {addr.state} {addr.zipCode}</p>
+                                                <Button variant="outline" onClick={() => setIsAddingNew(true)} className="w-full h-16 rounded-2xl border-2 border-dashed border-slate-200 hover:border-black hover:bg-slate-50 transition-all gap-3 font-black uppercase tracking-widest text-[10px]">
+                                                    <Plus className="h-4 w-4" /> Define New Protocol Address
+                                                </Button>
                                             </div>
-                                        ))}
-                                    </div>
-                                    <Button variant="outline" onClick={() => setIsAddingNew(true)} className="w-full flex items-center gap-2">
-                                        <Plus className="h-4 w-4" /> Use a different address
-                                    </Button>
-                                </div>
-                            )}
+                                        )}
 
-                            {isAddingNew && (
-                                <div className="space-y-6 pt-2">
-                                    {savedAddresses.length > 0 && (
-                                        <Button variant="ghost" onClick={() => setIsAddingNew(false)} className="-ml-4 text-primary">
-                                            &larr; Back to saved addresses
-                                        </Button>
-                                    )}
-                                    <div className="grid sm:grid-cols-2 gap-4">
-                                        <div className="space-y-2">
-                                            <label className="text-sm font-medium">First Name</label>
-                                            <Input value={address.firstName} onChange={e => updateAddress('firstName', e.target.value)} placeholder="John" />
-                                        </div>
-                                        <div className="space-y-2">
-                                            <label className="text-sm font-medium">Last Name</label>
-                                            <Input value={address.lastName} onChange={e => updateAddress('lastName', e.target.value)} placeholder="Doe" />
-                                        </div>
-                                        <div className="space-y-2 sm:col-span-2">
-                                            <label className="text-sm font-medium">Street Address</label>
-                                            <Input value={address.street} onChange={e => updateAddress('street', e.target.value)} placeholder="123 Main St" />
-                                        </div>
-                                        <div className="space-y-2">
-                                            <label className="text-sm font-medium">City</label>
-                                            <Input value={address.city} onChange={e => updateAddress('city', e.target.value)} placeholder="New York" />
-                                        </div>
-                                        <div className="space-y-2">
-                                            <label className="text-sm font-medium">ZIP Code</label>
-                                            <Input value={address.zipCode} onChange={e => updateAddress('zipCode', e.target.value)} placeholder="10001" />
-                                        </div>
-                                    </div>
-                                </div>
-                            )}
-
-                            <div className="pt-4 flex justify-end">
-                                <Button size="lg" onClick={handleNext} disabled={!canProceedFromAddress()}>
-                                    Continue to Payment
-                                </Button>
-                            </div>
-                        </div>
-                    )}
-
-                    {currentStep === 2 && (
-                        <div className="space-y-6">
-                            <h2 className="text-2xl font-bold">Payment Setup</h2>
-                            <p className="text-muted-foreground">You will be redirected securely to Stripe to complete your transaction after reviewing your order.</p>
-
-                            <div className="border rounded-lg p-6 flex flex-col items-center justify-center gap-4 bg-muted/30">
-                                <Lock className="h-8 w-8 text-primary" />
-                                <div className="text-center">
-                                    <p className="font-semibold">Secure Stripe Gateway</p>
-                                    <p className="text-sm text-muted-foreground">We never store your raw credit card information.</p>
-                                </div>
-                            </div>
-
-                            <div className="pt-4 flex justify-between">
-                                <Button variant="ghost" onClick={handleBack}>Back</Button>
-                                <Button size="lg" onClick={handleNext}>Review Order</Button>
-                            </div>
-                        </div>
-                    )}
-
-                    {currentStep === 3 && (
-                        <div className="space-y-6">
-                            <h2 className="text-2xl font-bold">Review Order</h2>
-                            <div className="space-y-4 border rounded-lg p-4 divide-y">
-                                {items.map(item => (
-                                    <div key={item.id} className="flex justify-between py-2 items-center">
-                                        <div className="flex items-center gap-4">
-                                            <div className="relative h-12 w-12 bg-muted rounded overflow-hidden">
-                                                <Image src={item.image ?? ''} alt={item.title} fill unoptimized className="object-cover" />
+                                        {isAddingNew && (
+                                            <div className="bg-slate-50 p-10 rounded-[40px] border-2 border-slate-100 space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                                                {savedAddresses.length > 0 && (
+                                                    <Button variant="ghost" onClick={() => setIsAddingNew(false)} className="text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-black p-0 h-auto">
+                                                        &larr; Return to Registry
+                                                    </Button>
+                                                )}
+                                                <div className="grid sm:grid-cols-2 gap-8">
+                                                    <div className="space-y-4">
+                                                        <label className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 ml-1">Acquirer First Name</label>
+                                                        <Input value={address.firstName} onChange={e => updateAddress('firstName', e.target.value)} placeholder="e.g. MARCUS" className="h-14 rounded-2xl border-2 font-bold focus-visible:ring-primary/20" />
+                                                    </div>
+                                                    <div className="space-y-4">
+                                                        <label className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 ml-1">Acquirer Last Name</label>
+                                                        <Input value={address.lastName} onChange={e => updateAddress('lastName', e.target.value)} placeholder="e.g. AURELIUS" className="h-14 rounded-2xl border-2 font-bold focus-visible:ring-primary/20" />
+                                                    </div>
+                                                    <div className="space-y-4 sm:col-span-2">
+                                                        <label className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 ml-1">Primary Conduit (Street)</label>
+                                                        <Input value={address.street} onChange={e => updateAddress('street', e.target.value)} placeholder="e.g. 742 EVERGREEN TERRACE" className="h-14 rounded-2xl border-2 font-bold focus-visible:ring-primary/20" />
+                                                    </div>
+                                                    <div className="space-y-4">
+                                                        <label className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 ml-1">City Node</label>
+                                                        <Input value={address.city} onChange={e => updateAddress('city', e.target.value)} placeholder="e.g. SPRINGFIELD" className="h-14 rounded-2xl border-2 font-bold focus-visible:ring-primary/20" />
+                                                    </div>
+                                                    <div className="space-y-4">
+                                                        <label className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 ml-1">Postal Reference</label>
+                                                        <Input value={address.zipCode} onChange={e => updateAddress('zipCode', e.target.value)} placeholder="e.g. 52401" className="h-14 rounded-2xl border-2 font-black tracking-widest focus-visible:ring-primary/20" />
+                                                    </div>
+                                                </div>
                                             </div>
-                                            <div>
-                                                <p className="font-medium line-clamp-1">{item.title}</p>
-                                                <p className="text-sm text-muted-foreground">Qty: {item.quantity}</p>
-                                            </div>
-                                        </div>
-                                        <p className="font-bold">${(item.price * item.quantity).toFixed(2)}</p>
-                                    </div>
-                                ))}
+                                        )}
 
-                                {/* Coupon input */}
-                                <div className="pt-4 space-y-3">
-                                    {appliedCoupon ? (
-                                        <div className="flex items-center justify-between bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-800 rounded-lg px-4 py-3">
-                                            <div className="flex items-center gap-2 text-green-700 dark:text-green-400">
-                                                <Tag className="h-4 w-4" />
-                                                <span className="font-semibold text-sm">{appliedCoupon.code}</span>
-                                                <span className="text-sm">(-${appliedCoupon.discountAmount.toFixed(2)})</span>
-                                            </div>
-                                            <button onClick={handleRemoveCoupon} className="text-red-500 hover:text-red-700">
-                                                <X className="h-4 w-4" />
-                                            </button>
-                                        </div>
-                                    ) : (
-                                        <div className="flex gap-2">
-                                            <Input
-                                                value={couponCode}
-                                                onChange={e => setCouponCode(e.target.value.toUpperCase())}
-                                                placeholder="Coupon code"
-                                                className="flex-1"
-                                                onKeyDown={e => e.key === 'Enter' && handleApplyCoupon()}
-                                            />
-                                            <Button variant="outline" onClick={handleApplyCoupon} disabled={isApplyingCoupon || !couponCode.trim()}>
-                                                {isApplyingCoupon ? '...' : 'Apply'}
+                                        <div className="pt-10 flex justify-between items-center border-t-2 border-slate-50">
+                                            <p className="text-[10px] font-bold text-slate-300 uppercase tracking-tighter italic">Step 01 / 03 — Operational Verification</p>
+                                            <Button
+                                                size="lg"
+                                                onClick={handleNext}
+                                                disabled={!canProceedFromAddress()}
+                                                className="h-16 px-12 rounded-[24px] font-black uppercase tracking-widest text-[10px] gap-3 shadow-xl transition-all active:scale-95"
+                                            >
+                                                Authorize & Proceed <ChevronRight className="h-4 w-4" />
                                             </Button>
                                         </div>
-                                    )}
-                                </div>
-
-                                <div className="pt-4 space-y-2">
-                                    <div className="flex justify-between text-sm text-muted-foreground">
-                                        <span>Subtotal</span>
-                                        <span>${total.toFixed(2)}</span>
                                     </div>
-                                    {appliedCoupon && (
-                                        <div className="flex justify-between text-sm text-green-600 dark:text-green-400">
-                                            <span>Discount ({appliedCoupon.code})</span>
-                                            <span>-${appliedCoupon.discountAmount.toFixed(2)}</span>
+                                )}
+
+                                {currentStep === 2 && (
+                                    <div className="space-y-10">
+                                        <div className="space-y-2">
+                                            <h2 className="text-3xl font-black uppercase tracking-tighter">Acquisition Gateway</h2>
+                                            <p className="text-xs font-bold text-slate-300 uppercase tracking-widest italic">Financial synchronization protocol</p>
                                         </div>
-                                    )}
-                                    <div className="flex justify-between text-lg font-bold pt-2 border-t">
-                                        <span>Total Amount Due</span>
-                                        <span>${finalTotal.toFixed(2)}</span>
+
+                                        <div className="bg-slate-50 rounded-[48px] p-12 border-4 border-slate-100 flex flex-col items-center justify-center gap-8 text-center relative overflow-hidden">
+                                            <div className="absolute top-0 right-0 p-12 opacity-[0.03] pointer-events-none">
+                                                <CreditCard className="h-48 w-48 -rotate-12" />
+                                            </div>
+
+                                            <div className="h-24 w-24 bg-white rounded-3xl flex items-center justify-center text-primary shadow-2xl relative z-10">
+                                                <Lock className="h-10 w-10 fill-primary/10" />
+                                            </div>
+
+                                            <div className="space-y-4 relative z-10">
+                                                <h3 className="text-2xl font-black uppercase tracking-tighter">IRONCLAD STRIPE PROTOCOL</h3>
+                                                <p className="text-sm font-medium text-slate-400 max-w-sm italic leading-relaxed">External redirection to military-grade encryption hub for financial settlement. No card data persist on locale.</p>
+                                            </div>
+
+                                            <div className="flex gap-4 pt-4 relative z-10">
+                                                <div className="h-10 w-16 bg-white border border-slate-100 rounded-lg flex items-center justify-center grayscale opacity-40">VISA</div>
+                                                <div className="h-10 w-16 bg-white border border-slate-100 rounded-lg flex items-center justify-center grayscale opacity-40">AMEX</div>
+                                                <div className="h-10 w-16 bg-white border border-slate-100 rounded-lg flex items-center justify-center grayscale opacity-40">MC</div>
+                                            </div>
+                                        </div>
+
+                                        <div className="pt-10 flex justify-between items-center border-t-2 border-slate-50">
+                                            <Button variant="ghost" onClick={handleBack} className="h-16 px-8 rounded-2xl font-black uppercase tracking-widest text-[10px] text-slate-400">Revert Stage</Button>
+                                            <Button
+                                                size="lg"
+                                                onClick={handleNext}
+                                                className="h-16 px-12 rounded-[24px] font-black uppercase tracking-widest text-[10px] gap-3 shadow-xl transition-all active:scale-95"
+                                            >
+                                                Initialize Review <ChevronRight className="h-4 w-4" />
+                                            </Button>
+                                        </div>
                                     </div>
-                                </div>
-                            </div>
+                                )}
 
-                            <div className="pt-4 flex justify-between">
-                                <Button variant="ghost" onClick={handleBack} disabled={isProcessing}>Back</Button>
-                                <Button size="lg" onClick={handlePlaceOrder} disabled={isProcessing}>
-                                    {isProcessing ? "Processing..." : "Place Order Securely"}
-                                </Button>
-                            </div>
-                        </div>
-                    )}
+                                {currentStep === 3 && (
+                                    <div className="space-y-10">
+                                        <div className="space-y-2">
+                                            <h2 className="text-3xl font-black uppercase tracking-tighter">Manifest Finalization</h2>
+                                            <p className="text-xs font-bold text-slate-300 uppercase tracking-widest italic">Asset validation & loyalty synchronization</p>
+                                        </div>
 
-                    {currentStep === 4 && (
-                        <div className="text-center space-y-6 py-10">
-                            <div className="mx-auto h-20 w-20 bg-green-100 text-green-600 rounded-full flex items-center justify-center mb-6">
-                                <CheckCircle2 className="h-10 w-10" />
-                            </div>
-                            <h2 className="text-3xl font-extrabold tracking-tight">Order Confirmed!</h2>
-                            <p className="text-lg text-muted-foreground max-w-md mx-auto">
-                                Thank you for your purchase. Your payment was successful and we are processing your order.
-                            </p>
-                            <div className="pt-8">
-                                <Button size="lg" onClick={() => router.push('/dashboard/orders')} variant="outline" className="mr-4">View Orders</Button>
-                                <Button size="lg" onClick={() => router.push('/')}>Continue Shopping</Button>
-                            </div>
-                        </div>
-                    )}
-                </motion.div>
-            </AnimatePresence>
+                                        <div className="bg-slate-50 rounded-[48px] border-2 border-slate-100 overflow-hidden divide-y divide-slate-100">
+                                            <div className="p-10 space-y-8">
+                                                {items.map(item => (
+                                                    <div key={item.id} className="flex justify-between items-center gap-10">
+                                                        <div className="flex items-center gap-10">
+                                                            <div className="relative h-20 w-20 bg-white border border-slate-100 rounded-2xl overflow-hidden shrink-0 shadow-sm">
+                                                                <Image src={item.image ?? ''} alt={item.title} fill unoptimized className="object-cover" />
+                                                            </div>
+                                                            <div>
+                                                                <p className="text-lg font-black uppercase tracking-tight line-clamp-1">{item.title}</p>
+                                                                <p className="text-[10px] font-bold text-slate-300 uppercase tracking-widest italic">QUANTITY: {item.quantity}</p>
+                                                            </div>
+                                                        </div>
+                                                        <p className="text-xl font-black tracking-tighter tabular-nums">${(item.price * item.quantity).toLocaleString(undefined, { minimumFractionDigits: 2 })}</p>
+                                                    </div>
+                                                ))}
+                                            </div>
+
+                                            <div className="p-10 bg-white/50 space-y-6">
+                                                <div className="flex justify-between items-center">
+                                                    <label className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Loyalty Credits / Coupon Protocol</label>
+                                                </div>
+
+                                                {appliedCoupon ? (
+                                                    <div className="flex items-center justify-between bg-emerald-50 border-2 border-emerald-100 rounded-[28px] px-8 py-5">
+                                                        <div className="flex items-center gap-4 text-emerald-800">
+                                                            <Tag className="h-5 w-5" />
+                                                            <span className="font-black uppercase tracking-widest text-xs">{appliedCoupon.code} Authorized</span>
+                                                            <span className="text-[10px] font-bold italic opacity-60">(-${appliedCoupon.discountAmount.toFixed(2)})</span>
+                                                        </div>
+                                                        <button onClick={handleRemoveCoupon} className="h-10 w-10 rounded-xl hover:bg-emerald-100 flex items-center justify-center transition-colors">
+                                                            <X className="h-5 w-5" />
+                                                        </button>
+                                                    </div>
+                                                ) : (
+                                                    <div className="flex gap-4">
+                                                        <Input
+                                                            value={couponCode}
+                                                            onChange={e => setCouponCode(e.target.value.toUpperCase())}
+                                                            placeholder="ENTER COUPE CODE"
+                                                            className="h-16 rounded-2xl border-2 font-black tracking-[0.3em] uppercase text-center focus-visible:ring-primary/20 placeholder:text-slate-200"
+                                                            onKeyDown={e => e.key === 'Enter' && handleApplyCoupon()}
+                                                        />
+                                                        <Button
+                                                            variant="outline"
+                                                            onClick={handleApplyCoupon}
+                                                            disabled={isApplyingCoupon || !couponCode.trim()}
+                                                            className="h-16 px-10 rounded-2xl border-2 font-black uppercase tracking-widest text-[10px]"
+                                                        >
+                                                            {isApplyingCoupon ? '...' : 'Validate'}
+                                                        </Button>
+                                                    </div>
+                                                )}
+                                            </div>
+
+                                            <div className="p-10 bg-black text-white space-y-4">
+                                                <div className="flex justify-between items-baseline opacity-40">
+                                                    <span className="text-[10px] font-black uppercase tracking-[0.3em]">Gross Subtotal</span>
+                                                    <span className="text-xl font-black tabular-nums">${total.toFixed(2)}</span>
+                                                </div>
+                                                {appliedCoupon && (
+                                                    <div className="flex justify-between items-baseline text-emerald-400">
+                                                        <span className="text-[10px] font-black uppercase tracking-[0.3em]">Coupon Override</span>
+                                                        <span className="text-xl font-black tabular-nums">-${appliedCoupon.discountAmount.toFixed(2)}</span>
+                                                    </div>
+                                                )}
+                                                <div className="flex justify-between items-end pt-4 border-t border-white/10">
+                                                    <div>
+                                                        <span className="text-[10px] font-black uppercase tracking-[0.3em] text-primary">Final Liability</span>
+                                                        <p className="text-[10px] font-bold text-white/30 uppercase tracking-tighter italic">Authorized for Transfer</p>
+                                                    </div>
+                                                    <span className="text-6xl font-black tracking-tighter tabular-nums">${finalTotal.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div className="pt-10 flex justify-between items-center border-t-2 border-slate-50">
+                                            <Button variant="ghost" onClick={handleBack} disabled={isProcessing} className="h-16 px-8 rounded-2xl font-black uppercase tracking-widest text-[10px] text-slate-400">Revert Manifest</Button>
+                                            <Button
+                                                size="lg"
+                                                onClick={handlePlaceOrder}
+                                                disabled={isProcessing}
+                                                className="h-16 px-16 rounded-[24px] font-black uppercase tracking-widest text-[10px] gap-4 shadow-2xl transition-all active:scale-95 group"
+                                            >
+                                                {isProcessing ? "Transmitting..." : "Establish Final Acquisition"}
+                                                <Zap className="h-5 w-5 transition-transform group-hover:scale-125" />
+                                            </Button>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {currentStep === 4 && (
+                                    <div className="text-center space-y-12 py-20 px-10 bg-slate-50 rounded-[60px] border-4 border-slate-100 relative overflow-hidden">
+                                        <div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from- emerald-500/5 via-transparent to-transparent pointer-events-none" />
+
+                                        <motion.div
+                                            initial={{ scale: 0.5, opacity: 0 }}
+                                            animate={{ scale: 1, opacity: 1 }}
+                                            transition={{ type: "spring", damping: 15 }}
+                                            className="mx-auto h-32 w-32 bg-emerald-500 text-white rounded-[40px] flex items-center justify-center shadow-2xl shadow-emerald-500/30"
+                                        >
+                                            <ShieldCheck className="h-16 w-16" />
+                                        </motion.div>
+
+                                        <div className="space-y-4">
+                                            <h2 className="text-5xl md:text-7xl font-black uppercase tracking-tighter">Acquisition <br /><span className="text-emerald-500">Authorized.</span></h2>
+                                            <p className="text-lg text-slate-400 font-medium max-w-lg mx-auto italic leading-relaxed">
+                                                Registry updated successfully. Your assets have been committed to the logistics flow and will materialize shortly.
+                                            </p>
+                                        </div>
+
+                                        <div className="pt-12 flex flex-col md:flex-row justify-center gap-6">
+                                            <Link href="/dashboard/orders">
+                                                <Button size="lg" variant="outline" className="h-18 px-12 rounded-[24px] font-black uppercase tracking-widest text-[10px] border-2">Monitor Dispatch</Button>
+                                            </Link>
+                                            <Link href="/">
+                                                <Button size="lg" className="h-18 px-12 rounded-[24px] font-black uppercase tracking-widest text-[10px] shadow-xl">Return to Core</Button>
+                                            </Link>
+                                        </div>
+                                    </div>
+                                )}
+                            </motion.div>
+                        </AnimatePresence>
+                    </div>
+                </div>
+            </div>
         </div>
     );
 }
