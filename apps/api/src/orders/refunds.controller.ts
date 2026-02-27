@@ -13,7 +13,6 @@ import {
   ApiOperation,
   ApiBearerAuth,
   ApiParam,
-  ApiBody,
 } from '@nestjs/swagger';
 import { RefundsService } from './refunds.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
