@@ -94,12 +94,16 @@ export class AuthService {
     }
 
     const resetToken = crypto.randomBytes(32).toString('hex');
+    const hashedToken = crypto
+      .createHash('sha256')
+      .update(resetToken)
+      .digest('hex');
     const resetPasswordExpires = new Date(Date.now() + 15 * 60 * 1000); // 15 minutes
 
     await this.prisma.user.update({
       where: { id: user.id },
       data: {
-        resetPasswordToken: resetToken,
+        resetPasswordToken: hashedToken,
         resetPasswordExpires,
       },
     });
@@ -112,9 +116,13 @@ export class AuthService {
   }
 
   async resetPassword(data: ResetPasswordDto) {
+    const hashedToken = crypto
+      .createHash('sha256')
+      .update(data.token)
+      .digest('hex');
     const user = await this.prisma.user.findFirst({
       where: {
-        resetPasswordToken: data.token,
+        resetPasswordToken: hashedToken,
         resetPasswordExpires: {
           gt: new Date(), // Check if token is not expired
         },

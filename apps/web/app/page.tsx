@@ -25,7 +25,7 @@ export default function Home() {
     const fetchTrendingProducts = async () => {
       try {
         const { data } = await api.get('/products?limit=4');
-        const formattedProducts = data.products.map((p: any) => ({
+        const formattedProducts = data.products.map((p: { id: string; title: string; description: string; price: number; gallery: string[] }) => ({
           id: p.id,
           title: p.title,
           description: p.description,

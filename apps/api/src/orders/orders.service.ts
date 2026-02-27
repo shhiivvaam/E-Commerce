@@ -9,7 +9,7 @@ import { CreateOrderDto } from './dto/order.dto';
 
 @Injectable()
 export class OrdersService {
-  constructor(private prisma: PrismaService) { }
+  constructor(private prisma: PrismaService) {}
 
   async create(userId: string, data: CreateOrderDto) {
     if (!data.items || data.items.length === 0) {
@@ -17,7 +17,9 @@ export class OrdersService {
     }
 
     if (!data.addressId && !data.address) {
-      throw new BadRequestException('Order must specify an addressId or the full address object');
+      throw new BadRequestException(
+        'Order must specify an addressId or the full address object',
+      );
     }
 
     return this.prisma.$transaction(async (tx) => {
@@ -67,8 +69,12 @@ export class OrdersService {
       }
 
       // Compute eventual taxes and shipping (can be pulled from Settings later)
-      const taxAmount = 0;
-      const shippingAmount = 0;
+      const settings = await tx.settings.findFirst();
+      const taxPercent = settings?.taxPercent || 0;
+      const shippingFlat = settings?.shippingFlat || 0;
+
+      const taxAmount = (totalAmount * taxPercent) / 100;
+      const shippingAmount = shippingFlat;
 
       let createdAddressId = data.addressId;
 
@@ -81,13 +87,13 @@ export class OrdersService {
             state: data.address.state,
             country: data.address.country,
             zipCode: data.address.zipCode,
-          }
+          },
         });
         createdAddressId = newAddress.id;
       }
 
       if (!createdAddressId) {
-        throw new BadRequestException("Address could not be resolved");
+        throw new BadRequestException('Address could not be resolved');
       }
 
       return tx.order.create({

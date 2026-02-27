@@ -27,7 +27,7 @@ export default function ProductsPage() {
                 // For now, we will fetch all and filter client side if the category API is not fully hooked up.
                 const { data } = await api.get('/products?limit=50');
 
-                const formattedProducts = data.products.map((p: any) => ({
+                const formattedProducts = data.products.map((p: { id: string; title: string; description: string; price: number; gallery: string[]; category?: { slug: string } }) => ({
                     id: p.id,
                     title: p.title,
                     description: p.description,

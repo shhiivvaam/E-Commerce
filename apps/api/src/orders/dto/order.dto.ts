@@ -47,7 +47,9 @@ export class CreateOrderDto {
   @IsOptional()
   addressId?: string;
 
-  @ApiPropertyOptional({ description: 'New address details if not using an existing addressId' })
+  @ApiPropertyOptional({
+    description: 'New address details if not using an existing addressId',
+  })
   @IsOptional()
   @ValidateNested()
   @Type(() => CreateAddressDto)

@@ -41,7 +41,11 @@ describe('OrdersService', () => {
           .mockResolvedValue([{ id: 'prod-1', price: 100, stock: 10 }]),
         update: jest.fn().mockResolvedValue({ id: 'prod-1', stock: 9 }),
       },
-      $transaction: jest.fn().mockImplementation(async (cb) => cb(prismaMock)),
+
+      $transaction: jest
+        .fn()
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-return, @typescript-eslint/no-unsafe-call
+        .mockImplementation(async (cb: any) => await cb(prismaMock)),
     };
 
     const module: TestingModule = await Test.createTestingModule({
