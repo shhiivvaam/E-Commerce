@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, Suspense } from "react";
 import { Package, Clock, CheckCircle, Truck, XCircle, RefreshCcw, ChevronRight, Activity, Calendar, Hash, DollarSign } from "lucide-react";
 import { api } from "@/lib/api";
 import { format } from "date-fns";
@@ -34,7 +34,7 @@ const getStatusIcon = (status: string) => {
     }
 };
 
-export default function OrdersPage() {
+function OrdersPageContent() {
     const [orders, setOrders] = useState<{
         id: string;
         createdAt: string;
@@ -199,5 +199,13 @@ export default function OrdersPage() {
                 </Link>
             </div>
         </div>
+    );
+}
+
+export default function OrdersPage() {
+    return (
+        <Suspense>
+            <OrdersPageContent />
+        </Suspense>
     );
 }

@@ -15,6 +15,7 @@ import { Footer } from '@/components/Footer';
 import { AnalyticsProvider } from '@/lib/analytics';
 
 import { ThemeProvider } from '@/components/ThemeProvider';
+import { Suspense } from 'react';
 
 export default function RootLayout({
   children,
@@ -25,7 +26,9 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning>
       <body className={inter.className}>
         <ThemeProvider attribute="class" defaultTheme="light" enableSystem={false}>
-          <AnalyticsProvider />
+          <Suspense>
+            <AnalyticsProvider />
+          </Suspense>
           <div className="relative flex min-h-screen flex-col bg-background text-foreground transition-colors duration-500">
             {/* Soft 3D ambient backdrop */}
             <div className="pointer-events-none fixed inset-0 -z-10">
