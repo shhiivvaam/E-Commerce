@@ -1,14 +1,14 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Package, Clock, CheckCircle, Truck, XCircle, RefreshCcw, ArrowRight, ShieldCheck, ChevronRight, Activity, Calendar, Hash, DollarSign } from "lucide-react";
+import { Package, Clock, CheckCircle, Truck, XCircle, RefreshCcw, ChevronRight, Activity, Calendar, Hash, DollarSign } from "lucide-react";
 import { api } from "@/lib/api";
 import { format } from "date-fns";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { useSearchParams } from "next/navigation";
 import toast from "react-hot-toast";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 
 const getStatusColor = (status: string) => {
     switch (status) {

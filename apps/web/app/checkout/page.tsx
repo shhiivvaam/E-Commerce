@@ -5,10 +5,10 @@ import { useCartStore } from "@/store/useCartStore";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { motion, AnimatePresence } from "framer-motion";
-import { CheckCircle2, CreditCard, MapPin, Package, Lock, Plus, Tag, X, ChevronRight, ShieldCheck, Zap, ArrowRight, ShieldAlert } from "lucide-react";
+import { CheckCircle2, CreditCard, MapPin, Package, Lock, Plus, Tag, X, ChevronRight, ShieldCheck, Zap, ShieldAlert } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
-import { useRouter } from "next/navigation";
+
 import { api } from "@/lib/api";
 import toast from "react-hot-toast";
 
@@ -60,7 +60,6 @@ export default function CheckoutPage() {
         country: "US"
     });
 
-    const router = useRouter();
 
     const finalTotal = appliedCoupon ? appliedCoupon.finalTotal : total;
 
@@ -71,8 +70,9 @@ export default function CheckoutPage() {
             const { data } = await api.post('/coupons/apply', { code: couponCode.trim(), cartTotal: total });
             setAppliedCoupon(data);
             toast.success(`Coupon authorized: -${data.discountAmount.toFixed(2)} Credits`);
-        } catch (err: any) {
-            toast.error(err.response?.data?.message || 'Invalid coupon signature');
+        } catch (err: unknown) {
+            const error = err as { response?: { data?: { message?: string } } };
+            toast.error(error.response?.data?.message || 'Invalid coupon signature');
         } finally {
             setIsApplyingCoupon(false);
         }

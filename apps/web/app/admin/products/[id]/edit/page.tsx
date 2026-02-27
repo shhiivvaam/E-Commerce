@@ -14,7 +14,7 @@ export default function EditProductPage({ params }: { params: { id: string } }) 
             try {
                 const { data } = await api.get(`/products/${params.id}`);
                 setProduct(data);
-            } catch (err) {
+            } catch {
                 toast.error("Failed to load product");
             } finally {
                 setLoading(false);

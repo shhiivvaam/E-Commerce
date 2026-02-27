@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { ProductCard } from "@/components/ProductCard";
 import Link from "next/link";
-import { ArrowRight, Zap, Shield, Truck, ShoppingCart, Star, Award, TrendingUp, ChevronRight } from "lucide-react";
+import { ArrowRight, Zap, Shield, Truck, Award, TrendingUp, ChevronRight } from "lucide-react";
 import Image from "next/image";
 import { useEffect, useState } from "react";
 import { api } from "@/lib/api";

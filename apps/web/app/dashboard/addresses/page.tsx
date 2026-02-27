@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { MapPin, Plus, Trash2, Star, ChevronLeft, Globe, Zap, ShieldCheck, X } from "lucide-react";
+import { MapPin, Plus, Trash2, Star, Globe, Zap, ShieldCheck, X } from "lucide-react";
 import { api } from "@/lib/api";
 import toast from "react-hot-toast";
 import { motion, AnimatePresence } from "framer-motion";

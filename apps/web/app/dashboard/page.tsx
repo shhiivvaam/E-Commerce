@@ -3,12 +3,11 @@
 import { useAuthStore } from "@/store/useAuthStore";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { motion } from "framer-motion";
 import { useEffect, useState } from "react";
 import { api } from "@/lib/api";
 import { toast } from "react-hot-toast";
 import { useRouter } from "next/navigation";
-import { ShieldCheck, Mail, Phone, User as UserIcon, AlertTriangle, Save, Trash2, Smartphone } from "lucide-react";
+import { ShieldCheck, Mail, User as UserIcon, AlertTriangle, Save, Trash2, Smartphone } from "lucide-react";
 
 export default function DashboardOverviewPage() {
     const { user, updateUser, logout } = useAuthStore();

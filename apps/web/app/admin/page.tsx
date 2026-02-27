@@ -154,7 +154,7 @@ export default function AdminOverview() {
                             { label: "Dispatch Module", href: "/admin/orders", icon: ShoppingBag, color: "text-blue-600 dark:text-blue-400" },
                             { label: "Global Policies", href: "/admin/settings", icon: DollarSign, color: "text-emerald-600 dark:text-emerald-400" },
                             { label: "Auth & Access", href: "/admin/customers", icon: Users, color: "text-rose-600 dark:text-rose-400" },
-                        ].map((action, i) => (
+                        ].map((action) => (
                             <Link key={action.href} href={action.href}
                                 className="flex items-center gap-6 p-6 rounded-[32px] bg-white dark:bg-black border-2 border-transparent hover:border-primary/10 hover:shadow-2xl transition-all group active:scale-95 shadow-sm">
                                 <div className={`h-12 w-12 rounded-2xl flex items-center justify-center bg-slate-50 dark:bg-white/5 group-hover:bg-primary group-hover:text-white transition-all shadow-inner ${action.color}`}>
