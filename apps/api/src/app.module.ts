@@ -16,6 +16,7 @@ import { SettingsModule } from './settings/settings.module';
 import { StorageModule } from './storage/storage.module';
 import { EmailModule } from './email/email.module';
 import { validateEnv } from './config/env.config';
+import { AddressesModule } from './addresses/addresses.module';
 
 @Module({
   controllers: [HealthController],
@@ -54,6 +55,7 @@ import { validateEnv } from './config/env.config';
     SettingsModule,
     StorageModule,
     EmailModule,
+    AddressesModule,
   ],
   providers: [
     {

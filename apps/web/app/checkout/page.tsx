@@ -1,11 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useCartStore } from "@/store/useCartStore";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { motion, AnimatePresence } from "framer-motion";
-import { CheckCircle2, CreditCard, MapPin, Package, Lock } from "lucide-react";
+import { CheckCircle2, CreditCard, MapPin, Package, Lock, Plus } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
@@ -18,12 +18,26 @@ const steps = [
     { id: 3, name: "Review Order", icon: Package },
 ];
 
+interface SavedAddress {
+    id: string;
+    street: string;
+    city: string;
+    state: string;
+    zipCode: string;
+    country: string;
+    isDefault: boolean;
+}
+
 export default function CheckoutPage() {
     const [currentStep, setCurrentStep] = useState(1);
     const { items, total, clearCart } = useCartStore();
     const [isProcessing, setIsProcessing] = useState(false);
 
     // Address state
+    const [savedAddresses, setSavedAddresses] = useState<SavedAddress[]>([]);
+    const [selectedAddressId, setSelectedAddressId] = useState<string | null>(null);
+    const [isAddingNew, setIsAddingNew] = useState(false);
+
     const [address, setAddress] = useState({
         firstName: "",
         lastName: "",
@@ -36,9 +50,28 @@ export default function CheckoutPage() {
 
     const router = useRouter();
 
+    useEffect(() => {
+        const fetchAddresses = async () => {
+            try {
+                const { data } = await api.get('/addresses');
+                setSavedAddresses(data);
+                if (data.length > 0) {
+                    const def = data.find((a: SavedAddress) => a.isDefault);
+                    setSelectedAddressId(def ? def.id : data[0].id);
+                } else {
+                    setIsAddingNew(true);
+                }
+            } catch (error) {
+                console.error("Could not fetch addresses", error);
+                setIsAddingNew(true);
+            }
+        };
+        fetchAddresses();
+    }, []);
+
     if (items.length === 0 && currentStep !== 4) {
         return (
-            <div className="container min-h-[60vh] flex flex-col items-center justify-center text-center">
+            <div className="container mx-auto min-h-[60vh] flex flex-col items-center justify-center text-center px-4">
                 <Package className="h-16 w-16 text-muted-foreground mb-4" />
                 <h2 className="text-2xl font-bold mb-2">Cart is empty</h2>
                 <p className="text-muted-foreground mb-6">You need items in your cart to checkout.</p>
@@ -54,16 +87,21 @@ export default function CheckoutPage() {
         setIsProcessing(true);
         try {
             // 1. Create Order
-            const orderPayload = {
+            const orderPayload: Record<string, unknown> = {
                 items: items.map(i => ({ productId: i.productId, quantity: i.quantity })),
-                address: {
+            };
+
+            if (selectedAddressId && !isAddingNew) {
+                orderPayload.addressId = selectedAddressId;
+            } else {
+                orderPayload.address = {
                     street: address.street,
                     city: address.city,
                     state: address.state,
                     country: address.country,
                     zipCode: address.zipCode
-                }
-            };
+                };
+            }
 
             const orderRes = await api.post('/orders', orderPayload);
             const orderId = orderRes.data.id;
@@ -102,6 +140,12 @@ export default function CheckoutPage() {
 
     const updateAddress = (field: string, value: string) => {
         setAddress(prev => ({ ...prev, [field]: value }));
+    };
+
+    const canProceedFromAddress = () => {
+        if (!isAddingNew && selectedAddressId) return true;
+        if (isAddingNew && address.street && address.city && address.zipCode) return true;
+        return false;
     };
 
     return (
@@ -147,30 +191,68 @@ export default function CheckoutPage() {
                     {currentStep === 1 && (
                         <div className="space-y-6">
                             <h2 className="text-2xl font-bold">Shipping Details</h2>
-                            <div className="grid sm:grid-cols-2 gap-4">
-                                <div className="space-y-2">
-                                    <label className="text-sm font-medium">First Name</label>
-                                    <Input value={address.firstName} onChange={e => updateAddress('firstName', e.target.value)} placeholder="John" />
+
+                            {savedAddresses.length > 0 && !isAddingNew && (
+                                <div className="space-y-4">
+                                    <p className="text-sm font-medium">Select a Saved Address</p>
+                                    <div className="grid gap-3 sm:grid-cols-2">
+                                        {savedAddresses.map((addr) => (
+                                            <div
+                                                key={addr.id}
+                                                onClick={() => setSelectedAddressId(addr.id)}
+                                                className={`p-4 rounded-xl border cursor-pointer transition-colors ${selectedAddressId === addr.id ? 'border-primary bg-primary/5 ring-1 ring-primary' : 'hover:border-primary/50'}`}
+                                            >
+                                                <div className="flex items-center gap-2 mb-2">
+                                                    <div className={`h-4 w-4 rounded-full border flex items-center justify-center ${selectedAddressId === addr.id ? 'border-primary' : 'border-muted-foreground'}`}>
+                                                        {selectedAddressId === addr.id && <div className="h-2 w-2 rounded-full bg-primary" />}
+                                                    </div>
+                                                    <span className="font-semibold text-sm">Delivery Address</span>
+                                                </div>
+                                                <p className="text-sm">{addr.street}</p>
+                                                <p className="text-sm text-muted-foreground">{addr.city}, {addr.state} {addr.zipCode}</p>
+                                            </div>
+                                        ))}
+                                    </div>
+                                    <Button variant="outline" onClick={() => setIsAddingNew(true)} className="w-full flex items-center gap-2">
+                                        <Plus className="h-4 w-4" /> Use a different address
+                                    </Button>
                                 </div>
-                                <div className="space-y-2">
-                                    <label className="text-sm font-medium">Last Name</label>
-                                    <Input value={address.lastName} onChange={e => updateAddress('lastName', e.target.value)} placeholder="Doe" />
+                            )}
+
+                            {isAddingNew && (
+                                <div className="space-y-6 pt-2">
+                                    {savedAddresses.length > 0 && (
+                                        <Button variant="ghost" onClick={() => setIsAddingNew(false)} className="-ml-4 text-primary">
+                                            &larr; Back to saved addresses
+                                        </Button>
+                                    )}
+                                    <div className="grid sm:grid-cols-2 gap-4">
+                                        <div className="space-y-2">
+                                            <label className="text-sm font-medium">First Name</label>
+                                            <Input value={address.firstName} onChange={e => updateAddress('firstName', e.target.value)} placeholder="John" />
+                                        </div>
+                                        <div className="space-y-2">
+                                            <label className="text-sm font-medium">Last Name</label>
+                                            <Input value={address.lastName} onChange={e => updateAddress('lastName', e.target.value)} placeholder="Doe" />
+                                        </div>
+                                        <div className="space-y-2 sm:col-span-2">
+                                            <label className="text-sm font-medium">Street Address</label>
+                                            <Input value={address.street} onChange={e => updateAddress('street', e.target.value)} placeholder="123 Main St" />
+                                        </div>
+                                        <div className="space-y-2">
+                                            <label className="text-sm font-medium">City</label>
+                                            <Input value={address.city} onChange={e => updateAddress('city', e.target.value)} placeholder="New York" />
+                                        </div>
+                                        <div className="space-y-2">
+                                            <label className="text-sm font-medium">ZIP Code</label>
+                                            <Input value={address.zipCode} onChange={e => updateAddress('zipCode', e.target.value)} placeholder="10001" />
+                                        </div>
+                                    </div>
                                 </div>
-                                <div className="space-y-2 sm:col-span-2">
-                                    <label className="text-sm font-medium">Street Address</label>
-                                    <Input value={address.street} onChange={e => updateAddress('street', e.target.value)} placeholder="123 Main St" />
-                                </div>
-                                <div className="space-y-2">
-                                    <label className="text-sm font-medium">City</label>
-                                    <Input value={address.city} onChange={e => updateAddress('city', e.target.value)} placeholder="New York" />
-                                </div>
-                                <div className="space-y-2">
-                                    <label className="text-sm font-medium">ZIP Code</label>
-                                    <Input value={address.zipCode} onChange={e => updateAddress('zipCode', e.target.value)} placeholder="10001" />
-                                </div>
-                            </div>
+                            )}
+
                             <div className="pt-4 flex justify-end">
-                                <Button size="lg" onClick={handleNext} disabled={!address.street || !address.city || !address.zipCode}>
+                                <Button size="lg" onClick={handleNext} disabled={!canProceedFromAddress()}>
                                     Continue to Payment
                                 </Button>
                             </div>
