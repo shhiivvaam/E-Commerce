@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { api } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Save, RefreshCw, LayoutGrid, Target, DollarSign, Percent, Globe, Palette, Zap, Shield, Activity, X, ChevronDown } from "lucide-react";
+import { Save, RefreshCw, LayoutGrid, Target, DollarSign, Percent, Globe, Zap, Shield, ChevronDown } from "lucide-react";
 import toast from "react-hot-toast";
 import { motion, AnimatePresence } from "framer-motion";
 

@@ -4,7 +4,7 @@ import { useEffect, useState, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { ProductCard } from "@/components/ProductCard";
 import { api } from "@/lib/api";
-import { Search, ChevronRight, Zap, ArrowRight, Info } from "lucide-react";
+import { Search, Zap, ArrowRight, Info } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";

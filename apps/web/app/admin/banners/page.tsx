@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { api } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Plus, Trash2, Eye, EyeOff, Link as LinkIcon, Image as ImageIcon, X, Zap, Activity, ExternalLink, Pencil } from "lucide-react";
+import { Plus, Trash2, Eye, EyeOff, Link as LinkIcon, Image as ImageIcon, X, Zap, Activity, Pencil } from "lucide-react";
 import toast from "react-hot-toast";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -234,7 +234,7 @@ export default function AdminBannersPage() {
                         <div key={i} className="aspect-[16/10] bg-slate-50/50 dark:bg-white/5 animate-pulse rounded-[48px] border-4 border-slate-50 dark:border-slate-900" />
                     ))
                 ) : banners.length > 0 ? (
-                    banners.map((b, i) => (
+                    banners.map((b) => (
                         <motion.div
                             layout
                             key={b.id}

@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { api } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Ticket, Plus, Trash2, Calendar, Percent, Banknote, Power, Search, X, Zap, Activity, DollarSign, Pencil } from "lucide-react";
+import { Ticket, Plus, Trash2, Calendar, Percent, Banknote, X, Activity, DollarSign, Pencil } from "lucide-react";
 import toast from "react-hot-toast";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -40,7 +40,7 @@ export default function AdminCouponsPage() {
         try {
             const { data } = await api.get('/coupons');
             setCoupons(data);
-        } catch (err) {
+        } catch {
             toast.error("Cloud promotional synchronization failed");
         } finally {
             setLoading(false);
@@ -69,8 +69,9 @@ export default function AdminCouponsPage() {
             }
             setShowForm(false);
             fetchCoupons();
-        } catch (err: any) {
-            toast.error(err.response?.data?.message || "Protocol rejection");
+        } catch (err: unknown) {
+            const error = err as { response?: { data?: { message?: string } } };
+            toast.error(error.response?.data?.message || "Protocol rejection");
         }
     };
 
@@ -80,7 +81,7 @@ export default function AdminCouponsPage() {
             await api.delete(`/coupons/${id}`);
             toast.success("Node purged from manifest");
             fetchCoupons();
-        } catch (err) {
+        } catch {
             toast.error("Purge sequence failed");
         }
     };

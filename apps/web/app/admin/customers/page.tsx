@@ -2,11 +2,27 @@
 
 import { useEffect, useState } from "react";
 import { api } from "@/lib/api";
-import { Shield, ShieldOff, Search, RefreshCw, Users, UserCheck, UserX, Mail, MoreHorizontal, X, MapPin, Calendar, ShoppingBag, ArrowUpRight, DollarSign, Activity, ChevronDown } from "lucide-react";
+import { Shield, ShieldOff, Search, RefreshCw, Users, UserCheck, UserX, Mail, MoreHorizontal, X, MapPin, Calendar, ShoppingBag, DollarSign, Activity, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import toast from "react-hot-toast";
 import { motion, AnimatePresence } from "framer-motion";
+
+interface Order {
+    id: string;
+    totalAmount: number;
+    status: string;
+    createdAt: string;
+}
+
+interface Address {
+    id: string;
+    street: string;
+    city: string;
+    state: string;
+    zipCode: string;
+    country: string;
+}
 
 interface User {
     id: string;
@@ -16,8 +32,8 @@ interface User {
     createdAt: string;
     role: { name: string };
     _count: { orders: number };
-    orders?: any[];
-    addresses?: any[];
+    orders?: Order[];
+    addresses?: Address[];
 }
 
 export default function AdminCustomersPage() {
@@ -324,7 +340,7 @@ export default function AdminCustomersPage() {
                                                 <ShoppingBag className="h-5 w-5" /> Revenue Contribution
                                             </h4>
                                             <div className="space-y-1">
-                                                <span className="text-4xl font-black tracking-tighter text-black dark:text-white tabular-nums">${selectedUser.orders?.reduce((sum, o) => sum + o.totalAmount, 0).toFixed(2) || '0.00'}</span>
+                                                <span className="text-4xl font-black tracking-tighter text-black dark:text-white tabular-nums">${selectedUser.orders?.reduce((sum: number, o: Order) => sum + o.totalAmount, 0).toFixed(2) || '0.00'}</span>
                                             </div>
                                         </div>
                                         <div className="bg-white dark:bg-[#0a0a0a] rounded-[40px] p-10 border-4 border-slate-50 dark:border-slate-900 space-y-4 hover:border-primary/20 transition-all shadow-sm">
@@ -346,7 +362,7 @@ export default function AdminCustomersPage() {
                                         <div className="bg-white dark:bg-[#050505] border-4 border-slate-50 dark:border-slate-900 rounded-[40px] overflow-hidden transition-colors shadow-inner">
                                             {selectedUser.orders && selectedUser.orders.length > 0 ? (
                                                 <div className="divide-y-4 divide-slate-50 dark:divide-slate-900">
-                                                    {selectedUser.orders.map((order: any) => (
+                                                    {selectedUser.orders.map((order: Order) => (
                                                         <div key={order.id} className="p-8 flex items-center justify-between hover:bg-slate-50 dark:hover:bg-white/5 transition-colors group">
                                                             <div className="space-y-1">
                                                                 <p className="font-black text-base uppercase text-black dark:text-white tracking-widest group-hover:text-primary transition-colors">#{(order.id || "").slice(-8).toUpperCase()}</p>
@@ -374,7 +390,7 @@ export default function AdminCustomersPage() {
                                             <h4 className="text-[10px] font-black uppercase tracking-[0.4em] text-slate-300 dark:text-slate-700 italic">Registered Nodes</h4>
                                         </div>
                                         <div className="grid grid-cols-1 gap-6">
-                                            {selectedUser.addresses && selectedUser.addresses.length > 0 ? selectedUser.addresses.map((addr: any) => (
+                                            {selectedUser.addresses && selectedUser.addresses.length > 0 ? selectedUser.addresses.map((addr: Address) => (
                                                 <div key={addr.id} className="p-8 bg-slate-50 dark:bg-white/5 border-4 border-slate-100 dark:border-slate-900 rounded-[32px] flex items-start gap-6 hover:shadow-xl transition-all group">
                                                     <div className="h-14 w-14 rounded-2xl bg-white dark:bg-black border-2 border-slate-100 dark:border-slate-800 flex items-center justify-center text-slate-300 dark:text-slate-700 shadow-inner group-hover:text-indigo-500 transition-colors">
                                                         <MapPin className="h-6 w-6" />
