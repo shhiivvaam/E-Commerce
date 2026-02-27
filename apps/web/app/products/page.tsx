@@ -13,18 +13,36 @@ interface Product {
     category?: string;
 }
 
+interface Category {
+    id: string;
+    name: string;
+    slug: string;
+    _count?: { products: number };
+}
+
 export default function ProductsPage() {
     const [filter, setFilter] = useState("all");
     const [products, setProducts] = useState<Product[]>([]);
+    const [categories, setCategories] = useState<Category[]>([]);
     const [loading, setLoading] = useState(true);
+
+    // Fetch dynamic categories from API
+    useEffect(() => {
+        const fetchCategories = async () => {
+            try {
+                const { data } = await api.get('/categories');
+                setCategories(data);
+            } catch (error) {
+                console.error("Failed to fetch categories:", error);
+            }
+        };
+        fetchCategories();
+    }, []);
 
     useEffect(() => {
         const fetchProducts = async () => {
             setLoading(true);
             try {
-                // If filter is "all", fetch without categoryId.
-                // Ideally we'd need a way to map category slug to categoryId or the API would support slug filters.
-                // For now, we will fetch all and filter client side if the category API is not fully hooked up.
                 const { data } = await api.get('/products?limit=50');
 
                 const formattedProducts = data.products.map((p: { id: string; title: string; description: string; price: number; gallery: string[]; category?: { slug: string } }) => ({
@@ -60,16 +78,27 @@ export default function ProductsPage() {
             </div>
 
             <div className="flex justify-center gap-2 mb-12 flex-wrap">
-                {["all", "audio", "wearable", "accessories", "photography"].map((cat) => (
+                <button
+                    key="all"
+                    onClick={() => setFilter("all")}
+                    className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${filter === "all"
+                        ? "bg-primary text-primary-foreground"
+                        : "bg-muted text-muted-foreground hover:bg-muted/80"
+                        }`}
+                >
+                    All
+                </button>
+                {categories.map((cat) => (
                     <button
-                        key={cat}
-                        onClick={() => setFilter(cat)}
-                        className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${filter === cat
+                        key={cat.id}
+                        onClick={() => setFilter(cat.slug)}
+                        className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${filter === cat.slug
                             ? "bg-primary text-primary-foreground"
                             : "bg-muted text-muted-foreground hover:bg-muted/80"
                             }`}
                     >
-                        {cat.charAt(0).toUpperCase() + cat.slice(1)}
+                        {cat.name}
+                        {cat._count && <span className="ml-1.5 opacity-60 text-xs">({cat._count.products})</span>}
                     </button>
                 ))}
             </div>
