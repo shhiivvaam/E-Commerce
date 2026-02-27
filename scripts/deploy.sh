@@ -181,6 +181,10 @@ log_info "[6/7] Cutting over using docker-compose..."
 docker stop "${SHADOW_NAME}" 2>/dev/null || true
 docker rm "${SHADOW_NAME}" 2>/dev/null || true
 
+# Force remove existing container to prevent Compose name collision from manually ran containers
+docker stop "${CONTAINER_NAME}" 2>/dev/null || true
+docker rm -f "${CONTAINER_NAME}" 2>/dev/null || true
+
 # Boot the new container directly through Compose!
 # Using docker-compose ensures the correct memory configs, limits, and restart policies from the YML apply.
 docker compose -f "${COMPOSE_FILE}" up -d api
