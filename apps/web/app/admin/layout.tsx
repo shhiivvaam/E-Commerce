@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, Package, Users, ShoppingCart, Tag, Ticket, LogOut } from "lucide-react";
+import { LayoutDashboard, Package, Users, ShoppingCart, Tag, Ticket, LogOut, Settings } from "lucide-react";
 import { useAuthStore } from "@/store/useAuthStore";
 
 const navigation = [
@@ -12,6 +12,7 @@ const navigation = [
     { name: 'Categories', href: '/admin/categories', icon: Tag },
     { name: 'Coupons', href: '/admin/coupons', icon: Ticket },
     { name: 'Customers', href: '/admin/customers', icon: Users },
+    { name: 'Settings', href: '/admin/settings', icon: Settings },
 ];
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {

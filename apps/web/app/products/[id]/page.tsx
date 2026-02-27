@@ -27,8 +27,16 @@ interface Product {
     discounted?: number;
     image: string;
     stock: number;
-    category?: { name: string; slug: string };
+    category?: { id: string; name: string; slug: string };
     variants?: Variant[];
+}
+
+interface RelatedProduct {
+    id: string;
+    title: string;
+    price: number;
+    discounted?: number;
+    gallery: string[];
 }
 
 interface Review {
@@ -43,6 +51,7 @@ export default function ProductDetailPage({ params }: { params: { id: string } }
     const [product, setProduct] = useState<Product | null>(null);
     const [loading, setLoading] = useState(true);
     const [reviews, setReviews] = useState<Review[]>([]);
+    const [relatedProducts, setRelatedProducts] = useState<RelatedProduct[]>([]);
     const [avgRating, setAvgRating] = useState(0);
     const [userRating, setUserRating] = useState(0);
     const [userComment, setUserComment] = useState("");
@@ -80,6 +89,15 @@ export default function ProductDetailPage({ params }: { params: { id: string } }
                     category: data.category,
                     variants: data.variants ?? [],
                 });
+
+                // Fetch related products from same category
+                if (data.category?.id) {
+                    api.get(`/products?categoryId=${data.category.id}&limit=4`)
+                        .then(({ data: related }) => {
+                            setRelatedProducts(related.products.filter((p: RelatedProduct) => p.id !== data.id));
+                        })
+                        .catch(() => { });
+                }
             } catch (err) {
                 console.error("Failed to load product details", err);
             } finally {
