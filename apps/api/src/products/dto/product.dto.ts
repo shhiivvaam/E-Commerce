@@ -12,11 +12,11 @@ import {
 import { Type } from 'class-transformer';
 
 export class CreateProductDto {
-  @ApiProperty({ example: 'Wireless Headphones', description: 'Product name' })
+  @ApiProperty({ example: 'Wireless Headphones', description: 'Product title' })
   @IsString()
   @MinLength(3)
   @MaxLength(100)
-  name: string;
+  title: string;
 
   @ApiProperty({
     example: 'High-quality wireless headphones with noise cancellation',
@@ -26,44 +26,49 @@ export class CreateProductDto {
   @MinLength(10)
   description: string;
 
-  @ApiProperty({ example: 99.99, description: 'Product price in USD' })
+  @ApiProperty({ example: 99.99, description: 'Product price' })
   @IsNumber({ maxDecimalPlaces: 2 })
   @IsPositive()
   price: number;
 
-  @ApiPropertyOptional({
-    example: 150,
-    description: 'Number of items in stock',
-  })
+  @ApiPropertyOptional({ example: 89.99 })
+  @IsOptional()
+  @IsNumber({ maxDecimalPlaces: 2 })
+  @IsPositive()
+  discounted?: number;
+
+  @ApiPropertyOptional({ example: 150 })
   @IsOptional()
   @IsNumber()
   @Min(0)
   stock?: number;
 
   @ApiPropertyOptional({
-    example: 'https://cdn.example.com/product.jpg',
-    description: 'Main product image URL',
+    example: ['https://cdn.example.com/p1.jpg'],
+    description: 'Gallery image URLs',
   })
   @IsOptional()
-  @IsString()
-  imageUrl?: string;
+  @IsString({ each: true })
+  gallery?: string[];
 
-  @ApiPropertyOptional({
-    example: 'clx_category_id_123',
-    description: 'Category ID this product belongs to',
-  })
+  @ApiPropertyOptional({ example: 'clx_category_id_123' })
   @IsOptional()
   @IsString()
   categoryId?: string;
+
+  @ApiPropertyOptional({ example: ['new', 'sale'] })
+  @IsOptional()
+  @IsString({ each: true })
+  tags?: string[];
 }
 
 export class UpdateProductDto {
-  @ApiPropertyOptional({ example: 'Updated Product Name' })
+  @ApiPropertyOptional({ example: 'Updated Title' })
   @IsOptional()
   @IsString()
   @MinLength(3)
   @MaxLength(100)
-  name?: string;
+  title?: string;
 
   @ApiPropertyOptional({ example: 'Updated description' })
   @IsOptional()
@@ -77,22 +82,34 @@ export class UpdateProductDto {
   @IsPositive()
   price?: number;
 
+  @ApiPropertyOptional({ example: 69.99 })
+  @IsOptional()
+  @IsNumber({ maxDecimalPlaces: 2 })
+  @IsPositive()
+  discounted?: number;
+
   @ApiPropertyOptional({ example: 200 })
   @IsOptional()
   @IsNumber()
   @Min(0)
   stock?: number;
 
-  @ApiPropertyOptional({ example: 'https://cdn.example.com/new-image.jpg' })
+  @ApiPropertyOptional({ example: ['https://cdn.example.com/new.jpg'] })
   @IsOptional()
-  @IsString()
-  imageUrl?: string;
+  @IsString({ each: true })
+  gallery?: string[];
 
   @ApiPropertyOptional({ example: 'clx_category_id_456' })
   @IsOptional()
   @IsString()
   categoryId?: string;
+
+  @ApiPropertyOptional({ example: ['updated'] })
+  @IsOptional()
+  @IsString({ each: true })
+  tags?: string[];
 }
+
 
 export class ProductQueryDto {
   @ApiPropertyOptional({ example: 'headphones', description: 'Search by name' })

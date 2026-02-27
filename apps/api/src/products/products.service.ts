@@ -13,7 +13,7 @@ export class ProductsService {
   constructor(
     private prisma: PrismaService,
     private settings: SettingsService,
-  ) {}
+  ) { }
 
   private generateSlug(title: string): string {
     return (
@@ -36,14 +36,16 @@ export class ProductsService {
     }
 
     // Map DTO 'name' to Prisma 'title', and auto-generate the required unique slug
-    const productData = {
-      title: data.name,
-      slug: this.generateSlug(data.name),
+    const productData: any = {
+      title: data.title,
+      slug: this.generateSlug(data.title),
       description: data.description,
       price: data.price,
+      discounted: data.discounted,
       stock: data.stock ?? 0,
-      gallery: data.imageUrl ? { set: [data.imageUrl] } : { set: [] },
-    } as Prisma.ProductCreateInput;
+      gallery: data.gallery ? { set: data.gallery } : { set: [] },
+      tags: data.tags ? { set: data.tags } : { set: [] },
+    };
 
     if (data.categoryId) {
       productData.category = {
@@ -128,6 +130,9 @@ export class ProductsService {
   }
 
   async update(id: string, data: UpdateProductDto) {
+    const product = await this.prisma.product.findUnique({ where: { id } });
+    if (!product) throw new NotFoundException('Product not found');
+
     // In single product mode, only allow updating the designated product
     const isSingle = await this.settings.isSingleProductMode();
     const singleId = await this.settings.getSingleProductId();
@@ -137,20 +142,18 @@ export class ProductsService {
       );
     }
 
-    const updateData: Prisma.ProductUpdateInput = {};
+    const updateData: Prisma.ProductUpdateInput = {
+      title: data.title,
+      description: data.description,
+      price: data.price,
+      discounted: data.discounted,
+      stock: data.stock,
+      gallery: data.gallery ? { set: data.gallery } : undefined,
+      tags: data.tags ? { set: data.tags } : undefined,
+    };
 
-    if (data.name) {
-      updateData.title = data.name;
-    }
-    if (data.description) updateData.description = data.description;
-    if (data.price !== undefined) updateData.price = data.price;
-    if (data.stock !== undefined) updateData.stock = data.stock;
-
-    // Push the new image to gallery array if provided
-    if (data.imageUrl) {
-      updateData.gallery = {
-        push: data.imageUrl,
-      };
+    if (data.title && data.title !== product.title) {
+      updateData.slug = this.generateSlug(data.title);
     }
 
     if (data.categoryId) {
