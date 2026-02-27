@@ -20,11 +20,15 @@ export const envValidationSchema = z.object({
   // Payment (Stripe) - optional for dev, but strictly validated if present
   STRIPE_SECRET_KEY: z
     .string()
-    .startsWith('sk_', 'STRIPE_SECRET_KEY must start with sk_')
+    .refine((val) => !val || val.startsWith('sk_'), {
+      message: 'STRIPE_SECRET_KEY must start with sk_',
+    })
     .optional(),
   STRIPE_WEBHOOK_SECRET: z
     .string()
-    .startsWith('whsec_', 'STRIPE_WEBHOOK_SECRET must start with whsec_')
+    .refine((val) => !val || val.startsWith('whsec_'), {
+      message: 'STRIPE_WEBHOOK_SECRET must start with whsec_',
+    })
     .optional(),
 
   // Storage (AWS S3) - optional for dev
