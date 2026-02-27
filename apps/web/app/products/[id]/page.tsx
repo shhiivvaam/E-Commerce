@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useCartStore } from "@/store/useCartStore";
 import { useAuthStore } from "@/store/useAuthStore";
 import { Button } from "@/components/ui/button";
@@ -69,7 +69,7 @@ export default function ProductDetailPage({ params }: { params: { id: string } }
     const [wishlistLoading, setWishlistLoading] = useState(false);
     const [selectedVariant, setSelectedVariant] = useState<Variant | null>(null);
 
-    const fetchReviews = async () => {
+    const fetchReviews = useCallback(async () => {
         try {
             const { data } = await api.get(`/products/${params.id}/reviews`);
             setReviews(data.reviews);
@@ -77,7 +77,7 @@ export default function ProductDetailPage({ params }: { params: { id: string } }
         } catch (err) {
             console.error("Reviews sync failure", err);
         }
-    };
+    }, [params.id]);
 
     useEffect(() => {
         const fetchProduct = async () => {
@@ -110,7 +110,7 @@ export default function ProductDetailPage({ params }: { params: { id: string } }
                 .then(({ data }) => setWishlisted(data.inWishlist))
                 .catch(() => { });
         }
-    }, [params.id, isAuthenticated]);
+    }, [params.id, isAuthenticated, fetchReviews]);
 
     const handleAddToCart = () => {
         if (!product) return;
@@ -157,8 +157,11 @@ export default function ProductDetailPage({ params }: { params: { id: string } }
             setUserRating(0);
             setUserComment("");
             await fetchReviews();
-        } catch (err: any) {
-            toast.error(err.response?.data?.message || "Unable to submit your review right now. Please try again.");
+        } catch (err: unknown) {
+            const errorMessage = err && typeof err === 'object' && 'response' in err 
+                ? (err as { response?: { data?: { message?: string } } }).response?.data?.message 
+                : "Unable to submit your review right now. Please try again.";
+            toast.error(errorMessage || "Unable to submit your review right now. Please try again.");
         } finally {
             setIsSubmittingReview(false);
         }

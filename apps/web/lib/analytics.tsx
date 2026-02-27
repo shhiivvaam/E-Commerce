@@ -9,7 +9,7 @@ type EventType = 'PAGE_VIEW' | 'PRODUCT_VIEW' | 'ADD_TO_CART' | 'SEARCH' | 'CHEC
 interface AnalyticsEvent {
     type: EventType;
     path: string;
-    metadata?: Record<string, any>;
+    metadata?: Record<string, unknown>;
     timestamp: string;
 }
 
@@ -27,7 +27,7 @@ class AnalyticsEngine {
         return AnalyticsEngine.instance;
     }
 
-    public track(type: EventType, metadata?: Record<string, any>) {
+    public track(type: EventType, metadata?: Record<string, unknown>) {
         const event: AnalyticsEvent = {
             type,
             path: window.location.pathname,

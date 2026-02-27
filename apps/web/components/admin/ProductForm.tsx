@@ -10,13 +10,32 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import toast from "react-hot-toast";
 
+interface Variant {
+    size?: string;
+    color?: string;
+    sku?: string;
+    stock: number;
+    priceDiff: number;
+}
+
 interface Category {
     id: string;
     name: string;
 }
 
 interface ProductFormProps {
-    initialData?: any;
+    initialData?: {
+        id: string;
+        title: string;
+        description: string;
+        price: number;
+        discounted?: number;
+        stock: number;
+        categoryId: string;
+        gallery: string[];
+        tags: string[];
+        variants?: Variant[];
+    };
     isEditing?: boolean;
 }
 
@@ -36,7 +55,7 @@ export function ProductForm({ initialData, isEditing = false }: ProductFormProps
         tags: initialData?.tags?.join(", ") || "",
     });
 
-    const [variants, setVariants] = useState<any[]>(initialData?.variants || []);
+const [variants, setVariants] = useState<Variant[]>(initialData?.variants || []);
 
     const addVariant = () => {
         setVariants([...variants, { size: "", color: "", sku: "", stock: 0, priceDiff: 0 }]);
@@ -46,9 +65,9 @@ export function ProductForm({ initialData, isEditing = false }: ProductFormProps
         setVariants(variants.filter((_, i: number) => i !== index));
     };
 
-    const handleVariantChange = (index: number, field: string, value: any) => {
+    const handleVariantChange = (index: number, field: string, value: string | number) => {
         const newVariants = [...variants];
-        newVariants[index] = { ...newVariants[index], [field]: field === 'stock' || field === 'priceDiff' ? parseFloat(value) : value };
+        newVariants[index] = { ...newVariants[index], [field]: (field === 'stock' || field === 'priceDiff') ? Number(value) : value };
         setVariants(newVariants);
     };
 
@@ -58,7 +77,7 @@ export function ProductForm({ initialData, isEditing = false }: ProductFormProps
             try {
                 const { data } = await api.get("/categories");
                 setCategories(data);
-            } catch (err) {
+            } catch {
                 console.error("Failed to fetch categories");
             }
         };
@@ -97,12 +116,12 @@ export function ProductForm({ initialData, isEditing = false }: ProductFormProps
             variants: variants.length > 0 ? variants : undefined,
             gallery: formData.gallery.filter((url: string) => url.trim() !== ""),
             tags: formData.tags.split(",").map((t: string) => t.trim()).filter((t: string) => t !== ""),
-            discounted: formData.discounted === 0 || isNaN(formData.discounted as any) ? null : formData.discounted
+            discounted: formData.discounted === 0 || Number.isNaN(formData.discounted as number) ? null : formData.discounted
         };
 
         try {
             if (isEditing) {
-                await api.patch(`/products/${initialData.id}`, payload);
+                await api.patch(`/products/${initialData?.id}`, payload);
                 toast.success("Product updated!");
             } else {
                 await api.post("/products", payload);
@@ -110,8 +129,11 @@ export function ProductForm({ initialData, isEditing = false }: ProductFormProps
             }
             router.push("/admin/products");
             router.refresh();
-        } catch (err: any) {
-            toast.error(err.response?.data?.message || "Something went wrong");
+        } catch (err: unknown) {
+            const errorMessage = err && typeof err === 'object' && 'response' in err 
+                ? (err as { response?: { data?: { message?: string } } }).response?.data?.message 
+                : "Something went wrong";
+            toast.error(errorMessage);
         } finally {
             setLoading(false);
         }

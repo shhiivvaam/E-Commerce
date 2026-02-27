@@ -30,7 +30,6 @@ export async function generateMetadata({ params }: { params: { id: string } }): 
         };
     }
 
-    const price = product.discounted ?? product.price;
     const title = `${product.title} | NexCart`;
     const description = product.description.slice(0, 160);
     const image = product.gallery?.[0] || "https://images.unsplash.com/photo-1523275335684-37898b6baf30?q=80&w=1000&auto=format&fit=crop";

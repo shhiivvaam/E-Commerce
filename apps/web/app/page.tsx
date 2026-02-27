@@ -1,11 +1,10 @@
 "use client";
 
-import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
+import { motion, useReducedMotion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { ProductCard } from "@/components/ProductCard";
 import Link from "next/link";
 import { ArrowRight, Zap, Shield, Truck, Award, TrendingUp, ChevronRight, ShoppingBag } from "lucide-react";
-import Image from "next/image";
 import { useEffect, useState } from "react";
 import { api } from "@/lib/api";
 import { useRouter } from "next/navigation";
@@ -31,8 +30,6 @@ export default function Home() {
   const prefersReducedMotion = useReducedMotion();
   const [storeMode, setStoreMode] = useState<{ mode: string; productId: string | null }>({ mode: 'multi', productId: null });
   const [products, setProducts] = useState<Product[]>([]);
-  const [banners, setBanners] = useState<Banner[]>([]);
-  const [activeBanner, setActiveBanner] = useState(0);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -55,7 +52,7 @@ export default function Home() {
           setStoreMode({ mode: 'single', productId: settings.singleProductId });
         }
 
-        const formattedProducts = productsRes.data.products?.map((p: any) => ({
+        const formattedProducts = productsRes.data.products?.map((p: { id: string; title: string; description: string; price: number; gallery?: string[] }) => ({
           id: p.id,
           title: p.title,
           description: p.description,
@@ -64,7 +61,6 @@ export default function Home() {
         })) || [];
 
         setProducts(formattedProducts);
-        setBanners(bannersRes.data || []);
       } catch (error) {
         console.error("Critical: Homepage intelligence failure", error);
       } finally {
@@ -75,14 +71,7 @@ export default function Home() {
     fetchAll();
   }, []);
 
-  useEffect(() => {
-    if (banners.length <= 1) return;
-    const timer = setInterval(() => {
-      setActiveBanner(prev => (prev + 1) % banners.length);
-    }, 8000);
-    return () => clearInterval(timer);
-  }, [banners.length]);
-
+  
   return (
     <div className="flex flex-col min-h-screen bg-background transition-colors duration-500 overflow-x-hidden">
       {/* Hero – 3D Shopping Bag */}
@@ -368,7 +357,7 @@ export default function Home() {
   );
 }
 
-function Package(props: any) {
+function Package(props: React.SVGProps<SVGSVGElement>) {
   return (
     <svg
       {...props}

@@ -47,7 +47,13 @@ export default function ProductsPage() {
     const fetchProducts = useCallback(async () => {
         setLoading(true);
         try {
-            const params: any = {
+            const params: {
+                limit: number;
+                sortBy?: string;
+                sortOrder?: string;
+                categoryId?: string;
+                search?: string;
+            } = {
                 limit: 50,
                 sortBy,
                 sortOrder,
@@ -57,7 +63,14 @@ export default function ProductsPage() {
 
             const { data } = await api.get('/products', { params });
 
-            let formatted = data.products.map((p: any) => ({
+            let formatted = data.products.map((p: {
+                id: string;
+                title: string;
+                description: string;
+                price: number;
+                discounted?: number;
+                gallery?: string[];
+            }) => ({
                 id: p.id,
                 title: p.title,
                 description: p.description,
@@ -66,8 +79,8 @@ export default function ProductsPage() {
                 image: p.gallery?.[0] || "https://images.unsplash.com/photo-1523275335684-37898b6baf30?q=80&w=1000&auto=format&fit=crop",
             }));
 
-            if (minPrice) formatted = formatted.filter((p: any) => (p.discounted || p.price) >= parseFloat(minPrice));
-            if (maxPrice) formatted = formatted.filter((p: any) => (p.discounted || p.price) <= parseFloat(maxPrice));
+            if (minPrice) formatted = formatted.filter((p: Product) => (p.discounted || p.price) >= parseFloat(minPrice));
+            if (maxPrice) formatted = formatted.filter((p: Product) => (p.discounted || p.price) <= parseFloat(maxPrice));
 
             setProducts(formatted);
         } catch (error) {
@@ -271,7 +284,7 @@ export default function ProductsPage() {
                                 transition={{ delay: i * 0.05 }}
                                 key={product.id}
                             >
-                                <ProductCard product={product as any} />
+                                <ProductCard product={product} />
                             </motion.div>
                         ))
                     ) : (
