@@ -8,18 +8,8 @@ import { Save, RefreshCw, LayoutGrid, Target, DollarSign, Percent, Globe, Zap, S
 import toast from "react-hot-toast";
 import { motion, AnimatePresence } from "framer-motion";
 
-interface Settings {
-    id: string;
-    storeName?: string;
-    storeMode: string;
-    singleProductId?: string;
-    taxRate?: number;
-    shippingRate?: number;
-    currency?: string;
-}
 
 export default function AdminSettingsPage() {
-    const [settings, setSettings] = useState<Settings | null>(null);
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [form, setForm] = useState({
@@ -35,7 +25,6 @@ export default function AdminSettingsPage() {
         setLoading(true);
         try {
             const { data } = await api.get('/settings');
-            setSettings(data);
             setForm({
                 storeName: data.storeName ?? "",
                 storeMode: data.storeMode ?? "multi",
@@ -66,8 +55,7 @@ export default function AdminSettingsPage() {
             if (form.storeMode === "single" && form.singleProductId) {
                 payload.singleProductId = form.singleProductId;
             }
-            const { data } = await api.patch('/settings', payload);
-            setSettings(data);
+            await api.patch('/settings', payload);
             toast.success("Global parameters synchronized");
         } catch {
             toast.error("Protocol commit rejected");

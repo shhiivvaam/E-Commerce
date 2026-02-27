@@ -20,9 +20,9 @@ interface AppliedCoupon {
 }
 
 const steps = [
-    { id: 1, name: "Logistics", icon: MapPin, label: "Shipping Node" },
-    { id: 2, name: "Protocol", icon: CreditCard, label: "Payment Gateway" },
-    { id: 3, name: "Validate", icon: Package, label: "Manifest Review" },
+    { id: 1, name: "Shipping", icon: MapPin, label: "Delivery address" },
+    { id: 2, name: "Payment", icon: CreditCard, label: "Secure payment" },
+    { id: 3, name: "Review", icon: Package, label: "Order summary" },
 ];
 
 interface SavedAddress {
@@ -104,14 +104,20 @@ export default function CheckoutPage() {
 
     if (items.length === 0 && currentStep !== 4) {
         return (
-            <div className="container mx-auto min-h-[70vh] flex flex-col items-center justify-center text-center px-8 bg-white dark:bg-[#050505] transition-colors duration-500">
-                <div className="h-24 w-24 bg-slate-50 dark:bg-slate-900 border-2 border-slate-100 dark:border-slate-800 rounded-[32px] flex items-center justify-center mb-10 text-slate-200 dark:text-slate-800">
+            <div className="container mx-auto min-h-[70vh] flex flex-col items-center justify-center text-center px-8 bg-background transition-colors duration-500">
+                <div className="h-20 w-20 bg-card border border-border rounded-3xl flex items-center justify-center mb-8 text-muted-foreground">
                     <ShieldAlert className="h-10 w-10" />
                 </div>
-                <h2 className="text-5xl font-black uppercase tracking-tighter text-black dark:text-white">Manifest Empty.</h2>
-                <p className="text-slate-400 dark:text-slate-600 font-medium mt-4 italic">Acquisition protocol requires active assets in current registry.</p>
-                <Link href="/products" className="mt-10">
-                    <Button size="lg" className="rounded-2xl h-16 px-12 font-black uppercase tracking-widest text-[10px] shadow-2xl">Return to Archives</Button>
+                <h2 className="text-2xl md:text-3xl font-semibold tracking-tight text-foreground">
+                    Your cart is empty
+                </h2>
+                <p className="text-sm text-muted-foreground mt-3">
+                    Add some products to your cart before going to checkout.
+                </p>
+                <Link href="/products" className="mt-4">
+                    <Button size="lg" className="rounded-full h-11 px-8 text-sm font-medium">
+                        Browse products
+                    </Button>
                 </Link>
             </div>
         );
@@ -183,17 +189,23 @@ export default function CheckoutPage() {
     };
 
     return (
-        <div className="bg-white dark:bg-[#050505] min-h-screen pb-40 transition-colors duration-500">
-            {/* Architectural Header */}
+        <div className="bg-background min-h-screen pb-40 transition-colors duration-500">
+            {/* Header */}
             <header className="pt-20 pb-12 border-b-2 border-slate-50 dark:border-slate-900 transition-colors">
                 <div className="container mx-auto px-8 flex flex-col md:flex-row justify-between items-start md:items-end gap-12">
                     <div className="space-y-4">
-                        <span className="text-[10px] font-black uppercase text-primary tracking-[0.4em]">Finalization Stage</span>
-                        <h1 className="text-6xl md:text-8xl font-black uppercase tracking-tighter leading-none text-black dark:text-white">Acquisition <br />Protocol</h1>
-                        <p className="text-slate-400 dark:text-slate-500 font-medium text-lg italic mt-4 max-w-lg leading-tight uppercase tracking-tighter">Securely transferring ownership of selected assets to your physical location.</p>
+                        <span className="text-xs font-medium text-primary/80 tracking-wide uppercase">
+                            Secure checkout
+                        </span>
+                        <h1 className="text-3xl md:text-4xl lg:text-5xl font-semibold tracking-tight leading-snug text-foreground">
+                            Complete your order
+                        </h1>
+                        <p className="text-sm text-muted-foreground mt-3 max-w-lg leading-relaxed">
+                            Enter your shipping details, confirm payment with our trusted provider, and review your order before placing it.
+                        </p>
                     </div>
 
-                    {/* Progress Stepper */}
+                    {/* Stepper */}
                     {currentStep < 4 && (
                         <div className="flex gap-4 md:gap-10 pb-4 w-full md:w-auto overflow-x-auto no-scrollbar">
                             {steps.map((step) => {
@@ -201,12 +213,12 @@ export default function CheckoutPage() {
                                 const isDone = currentStep > step.id;
                                 return (
                                     <div key={step.id} className="flex items-center gap-6 shrink-0">
-                                        <div className={`h-16 w-16 rounded-[24px] border-2 flex items-center justify-center transition-all ${isActive ? "bg-black dark:bg-white border-black dark:border-white text-white dark:text-black shadow-2xl" : "bg-white dark:bg-slate-950 border-slate-100 dark:border-slate-800 text-slate-300 dark:text-slate-700"}`}>
+                                        <div className={`h-12 w-12 rounded-2xl border flex items-center justify-center transition-all ${isActive ? "bg-primary text-primary-foreground border-primary shadow-md" : "bg-card border-border text-muted-foreground"}`}>
                                             {isDone ? <CheckCircle2 className="h-7 w-7" /> : <step.icon className="h-7 w-7" />}
                                         </div>
-                                        <div className="hidden xl:block space-y-1">
-                                            <p className={`text-[10px] font-black uppercase tracking-[0.2em] ${isActive ? 'text-black dark:text-white' : 'text-slate-300 dark:text-slate-700'}`}>{step.name}</p>
-                                            <p className="text-[9px] font-bold text-slate-300 dark:text-slate-700 uppercase tracking-tighter italic">{step.label}</p>
+                                        <div className="hidden xl:block space-y-0.5">
+                                            <p className={`text-xs font-medium ${isActive ? 'text-foreground' : 'text-muted-foreground'}`}>{step.name}</p>
+                                            <p className="text-[11px] text-muted-foreground">{step.label}</p>
                                         </div>
                                         {step.id < 3 && <div className="hidden lg:block h-px w-16 bg-slate-100 dark:bg-slate-900" />}
                                     </div>
@@ -219,7 +231,7 @@ export default function CheckoutPage() {
 
             <div className="container px-8 py-20 mx-auto max-w-7xl">
                 <div className="max-w-4xl mx-auto">
-                    {/* Execution Panel */}
+                    {/* Steps */}
                     <AnimatePresence mode="wait">
                         <motion.div
                             key={currentStep}
@@ -232,8 +244,12 @@ export default function CheckoutPage() {
                             {currentStep === 1 && (
                                 <div className="space-y-12">
                                     <div className="space-y-3">
-                                        <h2 className="text-4xl font-black uppercase tracking-tighter text-black dark:text-white">Physical Logistics</h2>
-                                        <p className="text-[10px] font-bold text-slate-300 dark:text-slate-700 uppercase tracking-[0.3em] italic">Destination node identification</p>
+                                        <h2 className="text-2xl md:text-3xl font-semibold tracking-tight text-foreground">
+                                            Shipping address
+                                        </h2>
+                                        <p className="text-xs text-muted-foreground">
+                                            Choose a saved address or add a new one for this order.
+                                        </p>
                                     </div>
 
                                     {savedAddresses.length > 0 && !isAddingNew && (

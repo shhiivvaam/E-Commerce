@@ -25,13 +25,13 @@ export async function generateMetadata({ params }: { params: { id: string } }): 
 
     if (!product) {
         return {
-            title: 'Product Not Found | NexusOS Archives',
-            description: 'The requested asset could not be located in our archives.'
+            title: 'Product not found | NexCart',
+            description: 'The requested product could not be located.'
         };
     }
 
     const price = product.discounted ?? product.price;
-    const title = `${product.title} | NexusOS Archive`;
+    const title = `${product.title} | NexCart`;
     const description = product.description.slice(0, 160);
     const image = product.gallery?.[0] || "https://images.unsplash.com/photo-1523275335684-37898b6baf30?q=80&w=1000&auto=format&fit=crop";
 
@@ -76,15 +76,11 @@ export default async function ProductLayout({ children, params }: { children: Re
         "category": product.category?.name,
         "offers": {
             "@type": "Offer",
-            "url": `https://nexus-os.com/products/${params.id}`,
+            "url": `https://nexcart.com/products/${params.id}`,
             "priceCurrency": "USD",
             "price": product.discounted ?? product.price,
             "itemCondition": "https://schema.org/NewCondition",
-            "availability": "https://schema.org/InStock",
-            "seller": {
-                "@type": "Organization",
-                "name": "NexusOS"
-            }
+            "availability": "https://schema.org/InStock"
         }
     };
 
