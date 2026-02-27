@@ -36,6 +36,23 @@ export function ProductForm({ initialData, isEditing = false }: ProductFormProps
         tags: initialData?.tags?.join(", ") || "",
     });
 
+    const [variants, setVariants] = useState<any[]>(initialData?.variants || []);
+
+    const addVariant = () => {
+        setVariants([...variants, { size: "", color: "", sku: "", stock: 0, priceDiff: 0 }]);
+    };
+
+    const removeVariant = (index: number) => {
+        setVariants(variants.filter((_, i: number) => i !== index));
+    };
+
+    const handleVariantChange = (index: number, field: string, value: any) => {
+        const newVariants = [...variants];
+        newVariants[index] = { ...newVariants[index], [field]: field === 'stock' || field === 'priceDiff' ? parseFloat(value) : value };
+        setVariants(newVariants);
+    };
+
+
     useEffect(() => {
         const fetchCategories = async () => {
             try {
@@ -77,6 +94,7 @@ export function ProductForm({ initialData, isEditing = false }: ProductFormProps
 
         const payload = {
             ...formData,
+            variants: variants.length > 0 ? variants : undefined,
             gallery: formData.gallery.filter((url: string) => url.trim() !== ""),
             tags: formData.tags.split(",").map((t: string) => t.trim()).filter((t: string) => t !== ""),
             discounted: formData.discounted === 0 || isNaN(formData.discounted as any) ? null : formData.discounted
@@ -157,7 +175,51 @@ export function ProductForm({ initialData, isEditing = false }: ProductFormProps
                             </Button>
                         </div>
                     </div>
+
+                    <div className="space-y-4 p-6 border rounded-xl bg-card shadow-sm">
+                        <div className="flex justify-between items-center">
+                            <h3 className="font-semibold text-lg">Product Variants</h3>
+                            <Button type="button" variant="outline" size="sm" onClick={addVariant} className="gap-2">
+                                <Plus className="h-4 w-4" /> Add Variant
+                            </Button>
+                        </div>
+                        <p className="text-xs text-muted-foreground">Define different versions of this product (e.g. sizes, colors).</p>
+
+                        <div className="space-y-4">
+                            {variants.map((v, index) => (
+                                <div key={index} className="grid grid-cols-2 md:grid-cols-5 gap-3 p-4 border rounded-xl bg-muted/30 relative group">
+                                    <div className="space-y-1">
+                                        <label className="text-[10px] uppercase font-bold text-muted-foreground">Size</label>
+                                        <Input placeholder="XL, 42..." value={v.size || ""} onChange={e => handleVariantChange(index, 'size', e.target.value)} className="h-8 text-xs" />
+                                    </div>
+                                    <div className="space-y-1">
+                                        <label className="text-[10px] uppercase font-bold text-muted-foreground">Color</label>
+                                        <Input placeholder="Red, Onyx..." value={v.color || ""} onChange={e => handleVariantChange(index, 'color', e.target.value)} className="h-8 text-xs" />
+                                    </div>
+                                    <div className="space-y-1">
+                                        <label className="text-[10px] uppercase font-bold text-muted-foreground">Stock</label>
+                                        <Input type="number" value={v.stock} onChange={e => handleVariantChange(index, 'stock', e.target.value)} className="h-8 text-xs" />
+                                    </div>
+                                    <div className="space-y-1">
+                                        <label className="text-[10px] uppercase font-bold text-muted-foreground">Price Diff</label>
+                                        <Input type="number" step="0.01" value={v.priceDiff} onChange={e => handleVariantChange(index, 'priceDiff', e.target.value)} className="h-8 text-xs" />
+                                    </div>
+                                    <div className="flex items-end">
+                                        <Button type="button" variant="ghost" size="icon" onClick={() => removeVariant(index)} className="h-8 w-8 text-destructive">
+                                            <Trash2 className="h-4 w-4" />
+                                        </Button>
+                                    </div>
+                                </div>
+                            ))}
+                            {variants.length === 0 && (
+                                <div className="text-center py-6 border border-dashed rounded-xl">
+                                    <p className="text-sm text-muted-foreground">No variants added. Product will use global stock and price.</p>
+                                </div>
+                            )}
+                        </div>
+                    </div>
                 </div>
+
 
                 <div className="space-y-6">
                     <div className="space-y-4 p-6 border rounded-xl bg-card shadow-sm">
