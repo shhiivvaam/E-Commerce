@@ -13,7 +13,7 @@ export class ProductsService {
   constructor(
     private prisma: PrismaService,
     private settings: SettingsService,
-  ) {}
+  ) { }
 
   private generateSlug(title: string): string {
     return (
@@ -27,6 +27,12 @@ export class ProductsService {
   }
 
   async create(data: CreateProductDto) {
+    // Block creation in single product mode
+    const isSingle = await this.settings.isSingleProductMode();
+    if (isSingle) {
+      throw new Error('Cannot create products while store is in single-product mode');
+    }
+
     // Map DTO 'name' to Prisma 'title', and auto-generate the required unique slug
     const productData = {
       title: data.name,
@@ -37,15 +43,11 @@ export class ProductsService {
       gallery: data.imageUrl ? { set: [data.imageUrl] } : { set: [] },
     } as Prisma.ProductCreateInput;
 
-    // If category is provided, connect it. Otherwise, create product without category if schema permits,
-    // or we have to assign a default. (Assuming default category or nullable in reality, though schema has it required. Let's make an 'Uncategorized' fallback if needed, but let's connect if provided).
-    // Wait, schema requires categoryId. We must ensure it's handled.
     if (data.categoryId) {
       productData.category = {
         connect: { id: data.categoryId },
       };
     } else {
-      // For safety if categoryId is required but not passed, find or create "Uncategorized"
       const defaultCategory = await this.prisma.category.upsert({
         where: { slug: 'uncategorized' },
         update: {},
@@ -124,6 +126,13 @@ export class ProductsService {
   }
 
   async update(id: string, data: UpdateProductDto) {
+    // In single product mode, only allow updating the designated product
+    const isSingle = await this.settings.isSingleProductMode();
+    const singleId = await this.settings.getSingleProductId();
+    if (isSingle && singleId && singleId !== id) {
+      throw new NotFoundException('Store is in single-product mode; this product cannot be modified');
+    }
+
     const updateData: Prisma.ProductUpdateInput = {};
 
     if (data.name) {
@@ -153,6 +162,12 @@ export class ProductsService {
   }
 
   async remove(id: string) {
+    // Prevent deleting the primary product in single-product mode
+    const isSingle = await this.settings.isSingleProductMode();
+    const singleId = await this.settings.getSingleProductId();
+    if (isSingle && singleId === id) {
+      throw new Error('Cannot delete the primary product while store is in single-product mode');
+    }
     return this.prisma.product.delete({ where: { id } });
   }
 }

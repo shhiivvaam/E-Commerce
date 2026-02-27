@@ -17,6 +17,9 @@ import {
 import { CategoriesService } from './categories.service';
 import { CreateCategoryDto, UpdateCategoryDto } from './dto/category.dto';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { RolesGuard } from '../auth/guards/roles.guard';
+import { Roles } from '../auth/decorators/roles.decorator';
+import { RoleType } from '@prisma/client';
 
 @ApiTags('Categories')
 @Controller('categories')
@@ -37,7 +40,8 @@ export class CategoriesController {
     }
 
     @Post()
-    @UseGuards(JwtAuthGuard)
+    @UseGuards(JwtAuthGuard, RolesGuard)
+    @Roles(RoleType.ADMIN)
     @ApiBearerAuth()
     @ApiOperation({ summary: 'Create a new category (admin)' })
     create(@Body() dto: CreateCategoryDto) {
@@ -45,7 +49,8 @@ export class CategoriesController {
     }
 
     @Patch(':id')
-    @UseGuards(JwtAuthGuard)
+    @UseGuards(JwtAuthGuard, RolesGuard)
+    @Roles(RoleType.ADMIN)
     @ApiBearerAuth()
     @ApiOperation({ summary: 'Update a category (admin)' })
     @ApiParam({ name: 'id', type: String })
@@ -54,7 +59,8 @@ export class CategoriesController {
     }
 
     @Delete(':id')
-    @UseGuards(JwtAuthGuard)
+    @UseGuards(JwtAuthGuard, RolesGuard)
+    @Roles(RoleType.ADMIN)
     @ApiBearerAuth()
     @ApiOperation({ summary: 'Soft-delete a category (admin)' })
     @ApiParam({ name: 'id', type: String })

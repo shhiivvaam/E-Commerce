@@ -5,7 +5,7 @@ import { useCartStore } from "@/store/useCartStore";
 import { useAuthStore } from "@/store/useAuthStore";
 import { Button } from "@/components/ui/button";
 import Image from "next/image";
-import { ShoppingCart, Star, ShieldCheck, Truck, ArrowLeft, Send } from "lucide-react";
+import { ShoppingCart, Star, ShieldCheck, Truck, ArrowLeft, Send, Heart } from "lucide-react";
 import Link from "next/link";
 import { api } from "@/lib/api";
 import toast from "react-hot-toast";
@@ -41,6 +41,8 @@ export default function ProductDetailPage({ params }: { params: { id: string } }
     const addItem = useCartStore(state => state.addItem);
     const { isAuthenticated, user } = useAuthStore();
     const [quantity, setQuantity] = useState(1);
+    const [wishlisted, setWishlisted] = useState(false);
+    const [wishlistLoading, setWishlistLoading] = useState(false);
 
     const fetchReviews = async () => {
         try {
@@ -87,6 +89,27 @@ export default function ProductDetailPage({ params }: { params: { id: string } }
             image: product.image
         });
         toast.success("Added to cart!");
+    };
+
+    const handleToggleWishlist = async () => {
+        if (!isAuthenticated) { toast.error("Please log in to use wishlist"); return; }
+        if (!product) return;
+        setWishlistLoading(true);
+        try {
+            if (wishlisted) {
+                await api.delete(`/wishlist/${product.id}`);
+                setWishlisted(false);
+                toast.success("Removed from wishlist");
+            } else {
+                await api.post(`/wishlist/${product.id}`);
+                setWishlisted(true);
+                toast.success("Added to wishlist!");
+            }
+        } catch {
+            toast.error("Failed to update wishlist");
+        } finally {
+            setWishlistLoading(false);
+        }
     };
 
     const handleSubmitReview = async (e: React.FormEvent) => {

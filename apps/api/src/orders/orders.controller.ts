@@ -20,7 +20,9 @@ import {
 } from '@nestjs/swagger';
 import { OrdersService } from './orders.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
-import { OrderStatus } from '@prisma/client';
+import { RolesGuard } from '../auth/guards/roles.guard';
+import { Roles } from '../auth/decorators/roles.decorator';
+import { OrderStatus, RoleType } from '@prisma/client';
 import {
   CreateOrderDto,
   UpdateOrderStatusDto,
@@ -32,7 +34,7 @@ import {
 @Controller('orders')
 @UseGuards(JwtAuthGuard)
 export class OrdersController {
-  constructor(private readonly ordersService: OrdersService) {}
+  constructor(private readonly ordersService: OrdersService) { }
 
   @Post()
   @ApiOperation({
@@ -99,22 +101,15 @@ export class OrdersController {
   }
 
   @Patch(':id/status')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(RoleType.ADMIN)
   @ApiOperation({
-    summary: 'Update order status',
-    description:
-      'Update the status of an order. Typically restricted to Admin roles.',
+    summary: 'Update order status (admin)',
+    description: 'Update the status of an order. Restricted to Admin roles.',
   })
-  @ApiParam({
-    name: 'id',
-    description: 'Order ID',
-    example: 'clx_order_id_123',
-  })
+  @ApiParam({ name: 'id', description: 'Order ID', example: 'clx_order_id_123' })
   @ApiBody({ type: UpdateOrderStatusDto })
-  @ApiResponse({
-    status: 200,
-    description: 'Order status updated successfully',
-    type: OrderResponseDto,
-  })
+  @ApiResponse({ status: 200, description: 'Order status updated successfully', type: OrderResponseDto })
   @ApiUnauthorizedResponse({ description: 'JWT token is missing or invalid' })
   @ApiNotFoundResponse({ description: 'Order not found' })
   updateStatus(@Param('id') id: string, @Body('status') status: OrderStatus) {
