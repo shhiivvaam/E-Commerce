@@ -17,6 +17,9 @@ import { StorageModule } from './storage/storage.module';
 import { EmailModule } from './email/email.module';
 import { validateEnv } from './config/env.config';
 import { AddressesModule } from './addresses/addresses.module';
+import { CategoriesModule } from './categories/categories.module';
+import { ReviewsModule } from './reviews/reviews.module';
+import { CouponsModule } from './coupons/coupons.module';
 
 @Module({
   controllers: [HealthController],
@@ -56,6 +59,9 @@ import { AddressesModule } from './addresses/addresses.module';
     StorageModule,
     EmailModule,
     AddressesModule,
+    CategoriesModule,
+    ReviewsModule,
+    CouponsModule,
   ],
   providers: [
     {
