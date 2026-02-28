@@ -3,184 +3,395 @@
 import Link from "next/link";
 import { useAuthStore } from "@/store/useAuthStore";
 import { useCartStore } from "@/store/useCartStore";
-import { ShoppingCart, User, LogOut, Search, X } from "lucide-react";
-import { Button } from "./ui/button";
+import { Heart, ShoppingBag, User, LogOut, Search, X, Menu } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import { ThemeToggle } from "./ThemeToggle";
 
 export function Navbar() {
-    const { isAuthenticated, logout, user } = useAuthStore();
-    const cartItems = useCartStore((state) => state.items);
-    const cartCount = cartItems.reduce((acc, item) => acc + item.quantity, 0);
-    const [searchOpen, setSearchOpen] = useState(false);
-    const [searchQuery, setSearchQuery] = useState("");
-    const [scrolled, setScrolled] = useState(false);
-    const inputRef = useRef<HTMLInputElement>(null);
-    const router = useRouter();
-    const pathname = usePathname();
+  const { isAuthenticated, logout, user } = useAuthStore();
+  const cartItems = useCartStore((state) => state.items);
+  const cartCount = cartItems.reduce((acc, item) => acc + item.quantity, 0);
 
-    useEffect(() => {
-        const handleScroll = () => setScrolled(window.scrollY > 20);
-        window.addEventListener("scroll", handleScroll);
-        return () => window.removeEventListener("scroll", handleScroll);
-    }, []);
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [scrolled, setScrolled] = useState(false);
+  const [mobileOpen, setMobileOpen] = useState(false);
 
-    const handleSearchSubmit = (e: React.FormEvent) => {
-        e.preventDefault();
-        if (searchQuery.trim()) {
-            router.push(`/search?q=${encodeURIComponent(searchQuery.trim())}`);
-            setSearchOpen(false);
-            setSearchQuery("");
+  const inputRef = useRef<HTMLInputElement>(null);
+  const router = useRouter();
+  const pathname = usePathname();
+
+  useEffect(() => {
+    const handleScroll = () => setScrolled(window.scrollY > 10);
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
+
+  // Close mobile menu on route change
+  useEffect(() => { setMobileOpen(false); }, [pathname]);
+
+  const handleSearchSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (searchQuery.trim()) {
+      router.push(`/search?q=${encodeURIComponent(searchQuery.trim())}`);
+      setSearchOpen(false);
+      setSearchQuery("");
+    }
+  };
+
+  const isAdmin = user?.role === "admin";
+  if (pathname?.startsWith("/admin")) return null;
+
+  const navItems = [
+    { label: "All", href: "/products" },
+    { label: "Men", href: "/men" },
+    { label: "Women", href: "/women" },
+    { label: "New Arrivals", href: "/new-arrivals" },
+    { label: "Sale", href: "/sale", accent: true },
+  ];
+
+  // Transparent on hero, ink-filled when scrolled
+  const navBg = scrolled
+    ? "rgba(10,10,10,0.97)"
+    : "transparent";
+  const navBorder = scrolled
+    ? "rgba(255,255,255,0.08)"
+    : "transparent";
+
+  return (
+    <>
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@700;900&family=DM+Sans:wght@300;400;500&display=swap');
+
+        .nav-root {
+          position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+          transition: background .35s cubic-bezier(.4,0,.2,1), border-color .35s, backdrop-filter .35s;
+          border-bottom: 1px solid;
+          backdrop-filter: blur(16px);
+          -webkit-backdrop-filter: blur(16px);
         }
-    };
+        .nav-inner {
+          max-width: 1400px; margin: 0 auto;
+          padding: 0 32px;
+          height: 64px;
+          display: flex; align-items: center; justify-content: space-between; gap: 24px;
+        }
+        @media (max-width: 640px) { .nav-inner { padding: 0 20px; height: 56px; } }
 
-    const isAdmin = user?.role === 'admin';
+        /* Logo */
+        .nav-logo {
+          font-family: 'Barlow Condensed', sans-serif;
+          font-size: 26px; font-weight: 900;
+          letter-spacing: .04em; text-transform: uppercase;
+          color: #fff; text-decoration: none;
+          flex-shrink: 0;
+          transition: opacity .2s;
+        }
+        .nav-logo:hover { opacity: .75; }
 
-    // Don't show public navbar on admin pages
-    if (pathname?.startsWith('/admin')) return null;
+        /* Center nav links */
+        .nav-links {
+          display: flex; align-items: center; gap: 36px;
+          list-style: none; margin: 0; padding: 0;
+        }
+        @media (max-width: 1023px) { .nav-links { display: none; } }
 
-    return (
-        <nav
-            className={`fixed top-0 left-0 right-0 z-[100] transition-all duration-500 ${scrolled
-                ? "py-3 px-4 md:px-10"
-                : "py-6 px-6 md:px-16"
-                }`}
-        >
-            <div className={`container mx-auto max-w-7xl h-16 md:h-18 px-5 md:px-7 flex items-center justify-between transition-all duration-500 rounded-[999px] border bg-card/80 backdrop-blur-xl relative overflow-hidden shadow-[0_18px_45px_-25px_rgba(15,23,42,0.55)] ${scrolled
-                ? "border-border/70"
-                : "border-transparent"
-                }`}>
-                {/* Brand */}
-                <div className="flex items-center gap-12 z-10">
-                    <Link href="/" className="flex items-center gap-3 group">
-                        <div className="h-9 w-9 md:h-10 md:w-10 bg-primary text-primary-foreground rounded-2xl flex items-center justify-center transition-transform duration-300 group-hover:-translate-y-0.5 group-hover:rotate-6 shadow-lg shadow-primary/40">
-                            <div className="h-4 w-4 md:h-5 md:w-5 border-2 border-primary-foreground/80 rounded-lg rotate-6 bg-card/30" />
-                        </div>
-                        <span className="text-lg md:text-xl font-semibold tracking-tight text-foreground">
-                            Nex<span className="text-primary">Cart</span>
-                        </span>
-                    </Link>
+        .nav-link {
+          font-family: 'DM Sans', sans-serif;
+          font-size: 12px; font-weight: 500;
+          letter-spacing: .1em; text-transform: uppercase;
+          color: rgba(255,255,255,.6);
+          text-decoration: none;
+          position: relative; padding-bottom: 2px;
+          transition: color .2s;
+        }
+        .nav-link::after {
+          content: ''; position: absolute; bottom: -2px; left: 0; right: 0;
+          height: 1.5px; background: #c8ff00;
+          transform: scaleX(0); transform-origin: left;
+          transition: transform .3s cubic-bezier(.4,0,.2,1);
+        }
+        .nav-link:hover, .nav-link.active { color: #fff; }
+        .nav-link:hover::after, .nav-link.active::after { transform: scaleX(1); }
+        .nav-link.sale { color: #c8ff00; }
+        .nav-link.sale:hover { color: #c8ff00; opacity: .8; }
+        .nav-link.sale::after { background: #c8ff00; }
 
-                    <div className="hidden lg:flex items-center gap-8">
-                        {['Shop', 'Categories', 'Deals'].map(item => {
-                            const href =
-                                item === 'Shop'
-                                    ? '/products'
-                                    : item === 'Categories'
-                                        ? '/categories'
-                                        : '/deals';
-                            const isActive = pathname === href;
-                            return (
-                                <Link
-                                    key={item}
-                                    href={href}
-                                    className={`text-xs font-medium transition-colors ${isActive
-                                        ? 'text-foreground'
-                                        : 'text-muted-foreground hover:text-foreground'
-                                        }`}
-                                >
-                                    {item}
-                                </Link>
-                            );
-                        })}
-                    </div>
-                </div>
+        /* Icon buttons */
+        .nav-icon-btn {
+          width: 40px; height: 40px; border-radius: 50%;
+          display: flex; align-items: center; justify-content: center;
+          background: transparent; border: none; cursor: pointer;
+          color: rgba(255,255,255,.7);
+          transition: background .2s, color .2s;
+        }
+        .nav-icon-btn:hover { background: rgba(255,255,255,.1); color: #fff; }
 
-                {/* Search overlay */}
-                <AnimatePresence>
-                    {searchOpen && (
-                        <motion.div
-                            initial={{ opacity: 0, scale: 0.95 }}
-                            animate={{ opacity: 1, scale: 1 }}
-                            exit={{ opacity: 0, scale: 0.95 }}
-                            className="absolute inset-0 bg-card/95 z-[20] flex items-center px-6 md:px-10"
-                        >
-                            <Search className="h-5 w-5 text-muted-foreground mr-4" />
-                            <form onSubmit={handleSearchSubmit} className="flex-1">
-                                <input
-                                    ref={inputRef}
-                                    value={searchQuery}
-                                    onChange={e => setSearchQuery(e.target.value)}
-                                    placeholder="Search products, brands, or categories"
-                                    className="w-full bg-transparent h-11 text-sm outline-none placeholder:text-muted-foreground text-foreground"
-                                    onBlur={() => { if (!searchQuery) setSearchOpen(false); }}
-                                />
-                            </form>
-                            <Button variant="ghost" size="icon" onClick={() => setSearchOpen(false)} className="rounded-full">
-                                <X className="h-5 w-5" />
-                            </Button>
-                        </motion.div>
-                    )}
-                </AnimatePresence>
+        /* Cart badge */
+        .nav-cart-badge {
+          position: absolute; top: -2px; right: -2px;
+          width: 17px; height: 17px; border-radius: 50%;
+          background: #c8ff00; color: #0a0a0a;
+          font-family: 'DM Sans', sans-serif;
+          font-size: 9px; font-weight: 700;
+          display: flex; align-items: center; justify-content: center;
+          pointer-events: none;
+        }
 
-                {/* Actions */}
-                <div className="flex items-center gap-2 z-10">
-                    <ThemeToggle />
+        /* Text btns */
+        .nav-text-btn {
+          font-family: 'DM Sans', sans-serif;
+          font-size: 12px; font-weight: 500; letter-spacing: .1em; text-transform: uppercase;
+          background: transparent; border: none; cursor: pointer;
+          color: rgba(255,255,255,.6); text-decoration: none;
+          transition: color .2s; white-space: nowrap;
+        }
+        .nav-text-btn:hover { color: #fff; }
 
-                    <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => { setSearchOpen(true); setTimeout(() => inputRef.current?.focus(), 100); }}
-                        className="rounded-full h-11 w-11 hover:bg-accent/60"
-                    >
-                        <Search className="h-5 w-5" />
-                    </Button>
+        .nav-join-btn {
+          font-family: 'DM Sans', sans-serif;
+          font-size: 12px; font-weight: 500; letter-spacing: .1em; text-transform: uppercase;
+          padding: 9px 20px; border-radius: 4px;
+          background: #c8ff00; color: #0a0a0a;
+          border: none; cursor: pointer; text-decoration: none;
+          transition: opacity .2s;
+        }
+        .nav-join-btn:hover { opacity: .85; }
 
-                    <Link href="/cart">
-                        <Button variant="ghost" size="icon" className="relative h-11 w-11 rounded-full hover:bg-accent/60 group">
-                            <ShoppingCart className="h-5 w-5" />
-                            {cartCount > 0 && (
-                                <span className="absolute -top-1 -right-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-primary text-[9px] font-semibold text-primary-foreground group-hover:scale-110 transition-transform">
-                                    {cartCount}
-                                </span>
-                            )}
-                        </Button>
-                    </Link>
+        /* ── SEARCH OVERLAY ── */
+        .search-overlay {
+          position: fixed; inset: 0; z-index: 200;
+          background: rgba(10,10,10,.96);
+          backdrop-filter: blur(16px);
+          display: flex; flex-direction: column;
+        }
+        .search-inner {
+          max-width: 800px; margin: 0 auto; padding: 0 32px;
+          height: 80px; display: flex; align-items: center; gap: 20px;
+          border-bottom: 1px solid rgba(255,255,255,.1);
+          width: 100%;
+        }
+        .search-input {
+          flex: 1; background: transparent; border: none; outline: none;
+          font-family: 'DM Sans', sans-serif;
+          font-size: clamp(24px, 4vw, 40px); font-weight: 300;
+          color: #fff; caret-color: #c8ff00;
+        }
+        .search-input::placeholder { color: rgba(255,255,255,.2); }
+        .search-hint {
+          max-width: 800px; margin: 32px auto 0; padding: 0 32px;
+          font-family: 'DM Sans', sans-serif;
+          font-size: 11px; letter-spacing: .12em; text-transform: uppercase;
+          color: rgba(255,255,255,.25); width: 100%;
+        }
 
-                    <div className="h-7 w-px bg-border mx-1.5" />
+        /* ── MOBILE MENU ── */
+        .mobile-menu {
+          position: fixed; inset: 0; z-index: 150;
+          background: #0a0a0a;
+          display: flex; flex-direction: column;
+          padding: 24px 28px 48px;
+          overflow-y: auto;
+        }
+        .mobile-menu-header {
+          display: flex; align-items: center; justify-content: space-between;
+          margin-bottom: 48px;
+        }
+        .mobile-nav-link {
+          font-family: 'Barlow Condensed', sans-serif;
+          font-size: 52px; font-weight: 900; text-transform: uppercase;
+          color: rgba(255,255,255,.35);
+          text-decoration: none; line-height: 1.1;
+          transition: color .2s;
+          display: block; padding: 4px 0;
+        }
+        .mobile-nav-link:hover, .mobile-nav-link.active { color: #fff; }
+        .mobile-nav-link.sale { color: #c8ff00 !important; }
+        .mobile-menu-footer {
+          margin-top: auto; padding-top: 48px;
+          border-top: 1px solid rgba(255,255,255,.1);
+          display: flex; gap: 16px; flex-wrap: wrap;
+        }
+      `}</style>
 
-                    {isAuthenticated ? (
-                        <div className="flex items-center gap-2">
-                            {isAdmin && (
-                                <Link href="/admin">
-                                    <Button variant="outline" size="sm" className="hidden md:flex h-10 rounded-full gap-2 text-xs font-medium hover:text-primary">
-                                        <div className="h-2 w-2 rounded-full bg-primary animate-pulse" />
-                                        Admin
-                                    </Button>
-                                </Link>
-                            )}
-                            <Link href="/dashboard">
-                                <Button variant="ghost" size="icon" className="h-10 w-10 rounded-full hover:bg-accent/60">
-                                    <User className="h-5 w-5" />
-                                </Button>
-                            </Link>
-                            <Button
-                                variant="ghost"
-                                size="icon"
-                                onClick={() => logout()}
-                                className="h-10 w-10 rounded-full text-rose-500 hover:bg-rose-50/80 dark:hover:bg-rose-950/30 hover:text-rose-600"
-                            >
-                                <LogOut className="h-5 w-5" />
-                            </Button>
-                        </div>
-                    ) : (
-                        <div className="flex items-center gap-3">
-                            <Link href="/login">
-                                <Button variant="ghost" className="h-10 px-5 rounded-full text-xs font-medium">
-                                    Sign in
-                                </Button>
-                            </Link>
-                            <Link href="/register">
-                                <Button className="h-10 px-6 rounded-full text-xs font-semibold shadow-lg shadow-primary/30">
-                                    Create account
-                                </Button>
-                            </Link>
-                        </div>
-                    )}
-                </div>
+      {/* ── NAVBAR ──────────────────────────────────────────────────── */}
+      <nav
+        className="nav-root"
+        style={{ background: navBg, borderColor: navBorder }}
+      >
+        <div className="nav-inner">
+          {/* Logo */}
+          <Link href="/" className="nav-logo">Reyva</Link>
+
+          {/* Center nav */}
+          <ul className="nav-links">
+            {navItems.map((item) => {
+              const active = pathname === item.href || pathname.startsWith(item.href + "/");
+              return (
+                <li key={item.label}>
+                  <Link
+                    href={item.href}
+                    className={`nav-link${active ? " active" : ""}${item.accent ? " sale" : ""}`}
+                  >
+                    {item.label}
+                  </Link>
+                </li>
+              );
+            })}
+          </ul>
+
+          {/* Right actions */}
+          <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+            {/* Search */}
+            <button
+              className="nav-icon-btn"
+              onClick={() => { setSearchOpen(true); setTimeout(() => inputRef.current?.focus(), 50); }}
+              aria-label="Search"
+            >
+              <Search size={18} />
+            </button>
+
+            {/* Wishlist */}
+            <button className="nav-icon-btn" aria-label="Wishlist">
+              <Heart size={18} />
+            </button>
+
+            {/* Cart */}
+            <Link href="/cart" style={{ position: "relative" }}>
+              <button className="nav-icon-btn" aria-label="Cart">
+                <ShoppingBag size={18} />
+                {cartCount > 0 && <span className="nav-cart-badge">{cartCount}</span>}
+              </button>
+            </Link>
+
+            {/* Auth */}
+            {isAuthenticated ? (
+              <>
+                {isAdmin && (
+                  <Link href="/admin">
+                    <span className="nav-text-btn" style={{ color: "#c8ff00", marginLeft: 8 }}>Admin</span>
+                  </Link>
+                )}
+                <Link href="/dashboard">
+                  <button className="nav-icon-btn" aria-label="Profile"><User size={18} /></button>
+                </Link>
+                <button className="nav-icon-btn" onClick={() => logout()} aria-label="Sign out"
+                  style={{ color: "rgba(255,255,255,.4)" }}
+                  onMouseOver={(e) => (e.currentTarget.style.color = "#ff6b6b")}
+                  onMouseOut={(e) => (e.currentTarget.style.color = "rgba(255,255,255,.4)")}
+                >
+                  <LogOut size={18} />
+                </button>
+              </>
+            ) : (
+              <div className="hidden sm:flex items-center gap-3" style={{ marginLeft: 8 }}>
+                <Link href="/login" className="nav-text-btn">Sign In</Link>
+                <Link href="/register" className="nav-join-btn">Join</Link>
+              </div>
+            )}
+
+            {/* Mobile hamburger */}
+            <button
+              className="nav-icon-btn lg:hidden"
+              onClick={() => setMobileOpen(true)}
+              aria-label="Open menu"
+            >
+              <Menu size={20} />
+            </button>
+          </div>
+        </div>
+      </nav>
+
+      {/* ── SEARCH OVERLAY ──────────────────────────────────────────── */}
+      <AnimatePresence>
+        {searchOpen && (
+          <motion.div
+            className="search-overlay"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: .25 }}
+          >
+            <div className="search-inner" style={{ maxWidth: "100%" }}>
+              <Search size={22} style={{ color: "rgba(255,255,255,.3)", flexShrink: 0 }} />
+              <form onSubmit={handleSearchSubmit} style={{ flex: 1 }}>
+                <input
+                  ref={inputRef}
+                  className="search-input"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Search products…"
+                  autoFocus
+                />
+              </form>
+              <button
+                className="nav-icon-btn"
+                onClick={() => { setSearchOpen(false); setSearchQuery(""); }}
+                aria-label="Close search"
+              >
+                <X size={22} />
+              </button>
             </div>
-        </nav>
-    );
+            <p className="search-hint">Press Enter to search</p>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* ── MOBILE MENU ─────────────────────────────────────────────── */}
+      <AnimatePresence>
+        {mobileOpen && (
+          <motion.div
+            className="mobile-menu"
+            initial={{ x: "100%" }}
+            animate={{ x: 0 }}
+            exit={{ x: "100%" }}
+            transition={{ duration: .4, ease: [.4, 0, .2, 1] }}
+          >
+            <div className="mobile-menu-header">
+              <Link href="/" className="nav-logo" onClick={() => setMobileOpen(false)}>Reyva</Link>
+              <button className="nav-icon-btn" onClick={() => setMobileOpen(false)} aria-label="Close menu">
+                <X size={22} />
+              </button>
+            </div>
+
+            <nav style={{ flex: 1 }}>
+              {navItems.map((item, i) => {
+                const active = pathname === item.href;
+                return (
+                  <motion.div
+                    key={item.label}
+                    initial={{ opacity: 0, x: 24 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: i * 0.06 }}
+                  >
+                    <Link
+                      href={item.href}
+                      className={`mobile-nav-link${active ? " active" : ""}${item.accent ? " sale" : ""}`}
+                    >
+                      {item.label}
+                    </Link>
+                  </motion.div>
+                );
+              })}
+            </nav>
+
+            <div className="mobile-menu-footer">
+              {isAuthenticated ? (
+                <>
+                  <Link href="/dashboard" className="nav-join-btn">Profile</Link>
+                  <button className="nav-text-btn" style={{ color: "rgba(255,255,255,.5)" }} onClick={() => logout()}>Sign Out</button>
+                </>
+              ) : (
+                <>
+                  <Link href="/register" className="nav-join-btn">Join – It's Free</Link>
+                  <Link href="/login" className="nav-text-btn" style={{ color: "rgba(255,255,255,.5)" }}>Sign In</Link>
+                </>
+              )}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </>
+  );
 }

@@ -1,172 +1,463 @@
 "use client";
 
-import { useEffect, useState, Suspense } from "react";
-import { useSearchParams } from "next/navigation";
+import { useState, Suspense, useMemo } from "react";
+import { useSearchParams, useRouter } from "next/navigation";
+import { useQuery } from "@tanstack/react-query";
 import { ProductCard } from "@/components/ProductCard";
-import { api } from "@/lib/api";
-import { Search, Zap, ArrowRight, Info } from "lucide-react";
-import { Input } from "@/components/ui/input";
-import { useRouter } from "next/navigation";
+import { Search, ArrowRight, Info, X } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Button } from "@/components/ui/button";
 
 interface Product {
-    id: string;
-    title: string;
-    description: string;
-    price: number;
-    discounted?: number;
-    image: string;
+  id: string;
+  title: string;
+  description: string;
+  price: number;
+  discounted?: number;
+  image: string;
 }
 
+type ExternalProduct = {
+  id: string;
+  title: string;
+  description: string;
+  price: number;
+  discounted?: number | null;
+  gallery?: string[];
+};
+
+type ProductsResponse = {
+  products?: ExternalProduct[];
+  total?: number;
+};
+
+/* ── Skeleton Card ─────────────────────── */
+function SkeletonCard() {
+  return (
+    <div style={{
+      background: "#fff",
+      border: "1.5px solid rgba(10,10,10,.08)",
+      borderRadius: 8,
+      overflow: "hidden",
+      animation: "sp-pulse 1.6s ease-in-out infinite"
+    }}>
+      <div style={{ height: 280, background: "#ede9e3" }} />
+      <div style={{ padding: "16px 18px", display: "flex", flexDirection: "column", gap: 10 }}>
+        <div style={{ height: 14, background: "#ede9e3", borderRadius: 4, width: "70%" }} />
+        <div style={{ height: 11, background: "#ede9e3", borderRadius: 4, width: "45%" }} />
+      </div>
+    </div>
+  );
+}
+
+/* ── Main Search Component ─────────────── */
 function SearchResults() {
-    const searchParams = useSearchParams();
-    const router = useRouter();
-    const query = searchParams.get("q") ?? "";
-    const [inputValue, setInputValue] = useState(query);
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const query = searchParams.get("q") ?? "";
+  const [inputValue, setInputValue] = useState(query);
 
-    const [products, setProducts] = useState<Product[]>([]);
-    const [loading, setLoading] = useState(false);
-    const [total, setTotal] = useState(0);
+  const { data, isLoading } = useQuery<ProductsResponse>({
+    queryKey: ["search-products", query],
+    enabled: !!query.trim(),
+    queryFn: async () => {
+      const res = await fetch("/api/products");
+      if (!res.ok) throw new Error("Failed to fetch products");
+      return res.json();
+    },
+  });
 
-    useEffect(() => {
-        setInputValue(query);
-        if (!query.trim()) {
-            setProducts([]);
-            return;
+  const products: Product[] = useMemo(() => {
+    if (!query.trim() || !data?.products) return [];
+    const q = query.toLowerCase();
+    return data.products
+      .filter(p =>
+        p.title.toLowerCase().includes(q) ||
+        p.description.toLowerCase().includes(q)
+      )
+      .map(p => ({
+        id: p.id,
+        title: p.title,
+        description: p.description,
+        price: p.price,
+        discounted: p.discounted ?? undefined,
+        image: p.gallery?.[0] ?? "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?q=80&w=400&auto=format&fit=crop",
+      }));
+  }, [data, query]);
+
+  const total = products.length;
+
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (inputValue.trim()) {
+      router.push(`/search?q=${encodeURIComponent(inputValue.trim())}`);
+    }
+  };
+
+  const clearInput = () => {
+    setInputValue("");
+    router.push("/search");
+  };
+
+  return (
+    <>
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@700;900&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;1,9..40,300&display=swap');
+
+        :root {
+          --ink: #0a0a0a;
+          --paper: #f5f3ef;
+          --accent: #c8ff00;
+          --mid: #8a8a8a;
+          --border: rgba(10,10,10,0.1);
+          --card: #fff;
         }
-        const fetchResults = async () => {
-            setLoading(true);
-            try {
-                const { data } = await api.get(`/products?search=${encodeURIComponent(query)}&limit=24`);
-                const formatted = data.products.map((p: { id: string; title: string; description: string; price: number; discounted?: number; gallery: string[] }) => ({
-                    id: p.id,
-                    title: p.title,
-                    description: p.description,
-                    price: p.price,
-                    discounted: p.discounted,
-                    image: p.gallery && p.gallery.length > 0 ? p.gallery[0] : "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?q=80&w=400&auto=format&fit=crop",
-                }));
-                setProducts(formatted);
-                setTotal(data.total);
-            } catch {
-                setProducts([]);
-            } finally {
-                setLoading(false);
-            }
-        };
-        fetchResults();
-    }, [query]);
 
-    const handleSearch = (e: React.FormEvent) => {
-        e.preventDefault();
-        if (inputValue.trim()) {
-            router.push(`/search?q=${encodeURIComponent(inputValue.trim())}`);
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        .sp-wrap {
+          font-family: 'DM Sans', sans-serif;
+          background: var(--paper);
+          color: var(--ink);
+          min-height: 100vh;
         }
-    };
 
-    return (
-        <div className="bg-white dark:bg-[#050505] min-h-screen pb-40 transition-colors duration-500">
-            {/* Architectural Header */}
-            <header className="pt-20 pb-16 border-b-2 border-slate-50 dark:border-slate-900 relative overflow-hidden transition-colors">
-                <div className="absolute top-0 right-0 w-1/3 h-full bg-primary/5 blur-[120px] rounded-full translate-x-1/2 -translate-y-1/2 pointer-events-none" />
-                <div className="container mx-auto px-8 relative z-10">
-                    <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-12">
-                        <div className="space-y-6">
-                            <div className="flex items-center gap-4">
-                                <span className="h-px w-12 bg-black/10 dark:bg-white/10" />
-                                <span className="text-[10px] font-black uppercase tracking-[0.4em] text-primary">Discovery Engine</span>
-                            </div>
-                            <h1 className="text-6xl md:text-8xl font-black uppercase tracking-tighter leading-none text-black dark:text-white">Global <br />Archive Search</h1>
-                            <p className="text-lg font-medium text-slate-400 dark:text-slate-500 italic max-w-xl">Querying the NexusOS centralized product registry for specific assets.</p>
-                        </div>
+        /* ── Header ── */
+        .sp-header {
+          background: var(--ink);
+          padding: 80px 0 52px;
+          position: relative;
+          overflow: hidden;
+        }
+        .sp-header-noise {
+          position: absolute; inset: 0; opacity: .03; pointer-events: none;
+          background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+          background-size: 200px;
+        }
+        .sp-header-inner {
+          max-width: 1400px; margin: 0 auto; padding: 0 32px;
+          position: relative; z-index: 1;
+        }
 
-                        {/* Search bar module */}
-                        <form onSubmit={handleSearch} className="w-full md:w-[500px] relative group">
-                            <div className="absolute inset-0 bg-primary/20 blur-2xl opacity-0 group-focus-within:opacity-100 transition-opacity duration-500" />
-                            <div className="relative">
-                                <Search className="absolute left-8 top-1/2 -translate-y-1/2 h-6 w-6 text-slate-300 dark:text-slate-700 transition-colors group-focus-within:text-primary" />
-                                <Input
-                                    value={inputValue}
-                                    onChange={e => setInputValue(e.target.value)}
-                                    placeholder="DESIGNATION QUERY..."
-                                    className="pl-20 pr-10 h-20 text-xs font-black tracking-[0.3em] uppercase rounded-[30px] border-4 dark:border-slate-800 bg-white dark:bg-black text-black dark:text-white focus-visible:ring-primary/20 shadow-2xl transition-all"
-                                />
-                                <button type="submit" className="absolute right-6 top-1/2 -translate-y-1/2 h-10 w-10 flex items-center justify-center rounded-2xl bg-slate-50 dark:bg-slate-900 text-black dark:text-white hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-all">
-                                    <ArrowRight className="h-5 w-5" />
-                                </button>
-                            </div>
-                        </form>
-                    </div>
-                </div>
-            </header>
+        .sp-eyebrow {
+          display: inline-flex; align-items: center; gap: 12px;
+          margin-bottom: 24px;
+        }
+        .sp-eyebrow-line { height: 1px; width: 40px; background: rgba(255,255,255,.2); }
+        .sp-eyebrow-label {
+          font-size: 10px; font-weight: 500; letter-spacing: .4em;
+          text-transform: uppercase; color: var(--accent);
+        }
 
-            <div className="container px-8 py-20 mx-auto max-w-7xl">
-                {query && (
-                    <div className="mb-16 flex items-center gap-6">
-                        <div className="h-12 px-6 bg-slate-50 dark:bg-slate-900 rounded-2xl flex items-center gap-4 border-2 border-slate-100 dark:border-slate-800">
-                            <Zap className="h-4 w-4 text-primary" />
-                            <span className="text-[10px] font-black uppercase tracking-widest text-black dark:text-white whitespace-nowrap">
-                                {loading ? "PROBING DATABASE..." : `${total} MATCHES IDENTIFIED`}
-                            </span>
-                        </div>
-                        <div className="h-px flex-1 bg-slate-50 dark:bg-slate-900" />
-                        <span className="text-sm font-black italic text-slate-300 dark:text-slate-700 uppercase tracking-tighter">Query: &quot;{query}&quot;</span>
-                    </div>
-                )}
+        .sp-headline {
+          font-family: 'Barlow Condensed', sans-serif;
+          font-size: clamp(52px, 8vw, 96px);
+          font-weight: 900;
+          text-transform: uppercase;
+          line-height: .95;
+          letter-spacing: -.01em;
+          color: #fff;
+          margin-bottom: 40px;
+        }
+        .sp-headline span {
+          color: rgba(255,255,255,.18);
+        }
 
-                <AnimatePresence mode="wait">
-                    {!query ? (
-                        <motion.div
-                            initial={{ opacity: 0, y: 20 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            exit={{ opacity: 0, y: -20 }}
-                            className="flex flex-col items-center justify-center py-40 text-center space-y-10"
-                        >
-                            <div className="h-24 w-24 bg-slate-50 dark:bg-slate-900 border-4 border-slate-100 dark:border-slate-800 rounded-[32px] flex items-center justify-center text-slate-200 dark:text-slate-800">
-                                <Search className="h-10 w-10" />
-                            </div>
-                            <div className="space-y-4">
-                                <h2 className="text-4xl font-black uppercase tracking-tighter text-black dark:text-white">Input Query Sequence</h2>
-                                <p className="text-base font-medium text-slate-400 dark:text-slate-600 max-w-sm mx-auto italic leading-relaxed">NexustOS awaits your designation parameters to filter the archives.</p>
-                            </div>
-                        </motion.div>
-                    ) : (
-                        <motion.div
-                            initial={{ opacity: 0 }}
-                            animate={{ opacity: 1 }}
-                            className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-10"
-                        >
-                            {loading ? (
-                                Array.from({ length: 8 }).map((_, i) => (
-                                    <div key={i} className="h-[480px] bg-slate-50 dark:bg-slate-900/50 animate-pulse rounded-[40px] border-2 border-slate-50 dark:border-slate-900" />
-                                ))
-                            ) : products.length > 0 ? (
-                                products.map(product => <ProductCard key={product.id} product={product} />)
-                            ) : query && !loading ? (
-                                <div className="col-span-full flex flex-col items-center justify-center py-40 text-center space-y-10">
-                                    <div className="h-24 w-24 bg-rose-50 dark:bg-rose-950/20 border-4 border-rose-100 dark:border-rose-900 rounded-[32px] flex items-center justify-center text-rose-200 dark:text-rose-900">
-                                        <Info className="h-10 w-10" />
-                                    </div>
-                                    <div className="space-y-4">
-                                        <h2 className="text-4xl font-black uppercase tracking-tighter text-black dark:text-white">No Matches Detected</h2>
-                                        <p className="text-base font-medium text-slate-400 dark:text-slate-600 max-w-sm mx-auto italic leading-relaxed">The registry contains no assets matching your current query signature.</p>
-                                    </div>
-                                    <Button variant="outline" onClick={() => setInputValue("")} className="h-16 px-12 rounded-2xl font-black uppercase tracking-widest text-[10px] border-4">Clear Parameters</Button>
-                                </div>
-                            ) : null}
-                        </motion.div>
-                    )}
-                </AnimatePresence>
+        /* search form */
+        .sp-form { position: relative; max-width: 600px; }
+        .sp-form-inner {
+          display: flex; align-items: center;
+          background: rgba(255,255,255,.06);
+          border: 1.5px solid rgba(255,255,255,.12);
+          border-radius: 8px;
+          padding: 0 20px;
+          height: 60px;
+          gap: 14px;
+          transition: border-color .25s, background .25s;
+        }
+        .sp-form-inner:focus-within {
+          border-color: rgba(200,255,0,.4);
+          background: rgba(255,255,255,.09);
+        }
+        .sp-search-icon { color: rgba(255,255,255,.3); flex-shrink: 0; transition: color .2s; }
+        .sp-form-inner:focus-within .sp-search-icon { color: var(--accent); }
+
+        .sp-input {
+          flex: 1;
+          background: transparent; border: none; outline: none;
+          color: #fff;
+          font-family: 'Barlow Condensed', sans-serif;
+          font-size: 22px; font-weight: 700;
+          text-transform: uppercase; letter-spacing: .04em;
+        }
+        .sp-input::placeholder { color: rgba(255,255,255,.2); }
+
+        .sp-clear-btn {
+          background: transparent; border: none; cursor: pointer;
+          color: rgba(255,255,255,.3); display: flex; align-items: center;
+          padding: 4px; border-radius: 4px;
+          transition: color .2s;
+        }
+        .sp-clear-btn:hover { color: rgba(255,255,255,.7); }
+
+        .sp-submit {
+          width: 44px; height: 44px; border-radius: 6px; flex-shrink: 0;
+          background: var(--accent); border: none; cursor: pointer;
+          display: flex; align-items: center; justify-content: center;
+          color: var(--ink); transition: opacity .2s, transform .15s;
+        }
+        .sp-submit:hover { opacity: .88; transform: translateY(-1px); }
+
+        /* ── Body ── */
+        .sp-body { max-width: 1400px; margin: 0 auto; padding: 48px 32px 96px; }
+
+        /* status bar */
+        .sp-status {
+          display: flex; align-items: center; gap: 16px;
+          margin-bottom: 40px;
+        }
+        .sp-status-pill {
+          display: inline-flex; align-items: center; gap: 10px;
+          padding: 0 18px; height: 38px;
+          background: var(--ink); border-radius: 6px;
+          white-space: nowrap;
+        }
+        .sp-status-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--accent); flex-shrink: 0; }
+        .sp-status-text { font-size: 10px; font-weight: 500; letter-spacing: .14em; text-transform: uppercase; color: rgba(255,255,255,.7); }
+        .sp-status-line { flex: 1; height: 1px; background: var(--border); }
+        .sp-status-query {
+          font-family: 'Barlow Condensed', sans-serif;
+          font-size: 13px; font-weight: 700; text-transform: uppercase;
+          letter-spacing: .06em; color: var(--mid);
+        }
+
+        /* product grid */
+        .sp-grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+          gap: 16px;
+        }
+
+        /* empty / idle states */
+        .sp-empty {
+          display: flex; flex-direction: column; align-items: center;
+          justify-content: center; text-align: center;
+          padding: 120px 24px; gap: 24px;
+        }
+        .sp-empty-icon {
+          width: 80px; height: 80px; border-radius: 12px;
+          border: 1.5px solid var(--border); background: var(--card);
+          display: flex; align-items: center; justify-content: center;
+          color: var(--mid);
+        }
+        .sp-empty-title {
+          font-family: 'Barlow Condensed', sans-serif;
+          font-size: 44px; font-weight: 900;
+          text-transform: uppercase; line-height: 1; margin-bottom: 10px;
+        }
+        .sp-empty-sub { font-size: 14px; font-weight: 300; color: var(--mid); max-width: 300px; }
+
+        .sp-empty-btn {
+          padding: 13px 32px; border-radius: 6px;
+          background: transparent; border: 1.5px solid var(--border);
+          color: var(--ink); cursor: pointer;
+          font-family: 'DM Sans', sans-serif;
+          font-size: 11px; font-weight: 500; letter-spacing: .12em; text-transform: uppercase;
+          display: inline-flex; align-items: center; gap: 8px;
+          transition: background .2s, border-color .2s;
+          margin-top: 8px;
+        }
+        .sp-empty-btn:hover { background: var(--ink); border-color: var(--ink); color: #fff; }
+
+        /* pulse skeleton */
+        @keyframes sp-pulse { 0%,100%{opacity:1} 50%{opacity:.5} }
+
+        @media(max-width:640px) {
+          .sp-header { padding: 60px 0 36px; }
+          .sp-header-inner, .sp-body { padding-left: 20px; padding-right: 20px; }
+          .sp-grid { grid-template-columns: 1fr 1fr; gap: 10px; }
+        }
+      `}</style>
+
+      <div className="sp-wrap">
+
+        {/* ── HEADER ── */}
+        <header className="sp-header">
+          <div className="sp-header-noise" />
+          <div className="sp-header-inner">
+            <div className="sp-eyebrow">
+              <span className="sp-eyebrow-line" />
+              <span className="sp-eyebrow-label">Search</span>
             </div>
+
+            <motion.h1
+              className="sp-headline"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: .5 }}
+            >
+              Find Your<br />
+              <span>Next</span> Piece
+            </motion.h1>
+
+            <motion.form
+              className="sp-form"
+              onSubmit={handleSearch}
+              initial={{ opacity: 0, y: 16 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: .5, delay: .1 }}
+            >
+              <div className="sp-form-inner">
+                <Search size={18} className="sp-search-icon" />
+                <input
+                  className="sp-input"
+                  value={inputValue}
+                  onChange={e => setInputValue(e.target.value)}
+                  placeholder="Search products…"
+                  autoFocus
+                />
+                <AnimatePresence>
+                  {inputValue && (
+                    <motion.button
+                      type="button"
+                      className="sp-clear-btn"
+                      onClick={clearInput}
+                      initial={{ opacity: 0, scale: .8 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      exit={{ opacity: 0, scale: .8 }}
+                    >
+                      <X size={14} />
+                    </motion.button>
+                  )}
+                </AnimatePresence>
+                <button type="submit" className="sp-submit">
+                  <ArrowRight size={16} />
+                </button>
+              </div>
+            </motion.form>
+          </div>
+        </header>
+
+        {/* ── BODY ── */}
+        <div className="sp-body">
+
+          {/* status bar */}
+          <AnimatePresence>
+            {query && (
+              <motion.div
+                className="sp-status"
+                initial={{ opacity: 0, y: -8 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0 }}
+              >
+                <div className="sp-status-pill">
+                  <motion.span
+                    className="sp-status-dot"
+                    animate={isLoading ? { opacity: [1, .2, 1] } : {}}
+                    transition={{ repeat: Infinity, duration: .9 }}
+                  />
+                  <span className="sp-status-text">
+                    {isLoading ? "Searching…" : `${total} result${total !== 1 ? "s" : ""}`}
+                  </span>
+                </div>
+                <span className="sp-status-line" />
+                <span className="sp-status-query">"{query}"</span>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          <AnimatePresence mode="wait">
+
+            {/* Idle — no query */}
+            {!query && (
+              <motion.div
+                key="idle"
+                className="sp-empty"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -20 }}
+              >
+                <motion.div
+                  className="sp-empty-icon"
+                  animate={{ y: [0, -8, 0] }}
+                  transition={{ repeat: Infinity, duration: 2.6, ease: "easeInOut" }}
+                >
+                  <Search size={30} />
+                </motion.div>
+                <div>
+                  <p className="sp-empty-title">Start Searching</p>
+                  <p className="sp-empty-sub">Type a product name, category, or keyword above.</p>
+                </div>
+              </motion.div>
+            )}
+
+            {/* Loading skeletons */}
+            {query && isLoading && (
+              <motion.div
+                key="loading"
+                className="sp-grid"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+              >
+                {Array.from({ length: 8 }).map((_, i) => <SkeletonCard key={i} />)}
+              </motion.div>
+            )}
+
+            {/* Results */}
+            {query && !isLoading && products.length > 0 && (
+              <motion.div
+                key="results"
+                className="sp-grid"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+              >
+                {products.map((product, i) => (
+                  <motion.div
+                    key={product.id}
+                    initial={{ opacity: 0, y: 16 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: i * .04 }}
+                  >
+                    <ProductCard product={product} />
+                  </motion.div>
+                ))}
+              </motion.div>
+            )}
+
+            {/* No results */}
+            {query && !isLoading && products.length === 0 && (
+              <motion.div
+                key="empty"
+                className="sp-empty"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0 }}
+              >
+                <div className="sp-empty-icon" style={{ borderColor: "rgba(225,29,72,.15)", background: "#fff0f3", color: "#e11d48" }}>
+                  <Info size={30} />
+                </div>
+                <div>
+                  <p className="sp-empty-title">No Results</p>
+                  <p className="sp-empty-sub">Nothing matched "<strong>{query}</strong>". Try a different term.</p>
+                </div>
+                <button className="sp-empty-btn" onClick={clearInput}>
+                  <X size={13} /> Clear Search
+                </button>
+              </motion.div>
+            )}
+
+          </AnimatePresence>
         </div>
-    );
+      </div>
+    </>
+  );
 }
 
 export default function SearchPage() {
-    return (
-        <Suspense>
-            <SearchResults />
-        </Suspense>
-    );
+  return (
+    <Suspense>
+      <SearchResults />
+    </Suspense>
+  );
 }
