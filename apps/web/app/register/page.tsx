@@ -226,7 +226,7 @@ export default function RegisterPage() {
           </div>
 
           <div className="rp-quote">
-            <p>"Wishlists, faster checkout, and order history make shopping here feel effortless."</p>
+            <p>&quot;Wishlists, faster checkout, and order history make shopping here feel effortless.&quot;</p>
             <footer>— Reyva Member</footer>
           </div>
         </aside>

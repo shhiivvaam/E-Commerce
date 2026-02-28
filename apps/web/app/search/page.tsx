@@ -360,7 +360,7 @@ function SearchResults() {
                   </span>
                 </div>
                 <span className="sp-status-line" />
-                <span className="sp-status-query">"{query}"</span>
+                <span className="sp-status-query">&quot;{query}&quot;</span>
               </motion.div>
             )}
           </AnimatePresence>
@@ -439,7 +439,7 @@ function SearchResults() {
                 </div>
                 <div>
                   <p className="sp-empty-title">No Results</p>
-                  <p className="sp-empty-sub">Nothing matched "<strong>{query}</strong>". Try a different term.</p>
+                  <p className="sp-empty-sub">Nothing matched &quot;<strong>{query}</strong>&quot;. Try a different term.</p>
                 </div>
                 <button className="sp-empty-btn" onClick={clearInput}>
                   <X size={13} /> Clear Search

@@ -28,7 +28,7 @@ export default function CartPage() {
             </div>
             <div>
               <h2 style={{ fontFamily: "'Barlow Condensed',sans-serif", fontSize: 48, fontWeight: 900, textTransform: "uppercase", lineHeight: 1, marginBottom: 12 }}>Your Bag is Empty</h2>
-              <p style={{ fontSize: 15, fontWeight: 300, color: "var(--mid)", maxWidth: 340 }}>Start adding items to see them here and check out when you're ready.</p>
+              <p style={{ fontSize: 15, fontWeight: 300, color: "var(--mid)", maxWidth: 340 }}>Start adding items to see them here and check out when you&apos;re ready.</p>
             </div>
             <Link href="/products">
               <button style={{ padding: "14px 36px", borderRadius: 6, background: "var(--ink)", color: "#fff", border: "none", cursor: "pointer", fontFamily: "'DM Sans',sans-serif", fontSize: 12, fontWeight: 500, letterSpacing: ".1em", textTransform: "uppercase", display: "inline-flex", alignItems: "center", gap: 10 }}>

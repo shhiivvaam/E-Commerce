@@ -226,7 +226,7 @@ export default function LoginPage() {
           </div>
 
           <div className="lp-quote">
-            <p>"Checking out is fast, simple, and secure — my details are saved and I can reorder in a few clicks."</p>
+            <p>&quot;Checking out is fast, simple, and secure — my details are saved and I can reorder in a few clicks.&quot;</p>
             <footer>— Reyva Customer</footer>
           </div>
         </aside>

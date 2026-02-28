@@ -384,7 +384,7 @@ export function Navbar() {
                 </>
               ) : (
                 <>
-                  <Link href="/register" className="nav-join-btn">Join – It's Free</Link>
+                  <Link href="/register" className="nav-join-btn">Join – It&apos;s Free</Link>
                   <Link href="/login" className="nav-text-btn" style={{ color: "rgba(255,255,255,.5)" }}>Sign In</Link>
                 </>
               )}

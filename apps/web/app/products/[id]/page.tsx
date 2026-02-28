@@ -5,7 +5,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useCartStore } from "@/store/useCartStore";
 import { useAuthStore } from "@/store/useAuthStore";
 import Image from "next/image";
-import { ShoppingBag, Star, ShieldCheck, Truck, ArrowLeft, Send, Heart, ChevronRight, Zap, Plus, Minus, RotateCcw } from "lucide-react";
+import { ShoppingBag, Star, ShieldCheck, Truck, ArrowLeft, Send, Heart, ChevronRight, Zap, Plus, Minus } from "lucide-react";
 import Link from "next/link";
 import { api } from "@/lib/api";
 import toast from "react-hot-toast";

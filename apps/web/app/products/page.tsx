@@ -408,7 +408,7 @@ export default function ProductsPage() {
           {/* Active filter tags */}
           {search && (
             <button className="pp-tag" onClick={() => setSearch("")}>
-              "{search}" <X size={11} />
+              &quot;{search}&quot; <X size={11} />
             </button>
           )}
           {(minPrice || maxPrice) && (

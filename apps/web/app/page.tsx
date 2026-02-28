@@ -1,10 +1,10 @@
 "use client";
 
 import { motion, AnimatePresence, useReducedMotion, useScroll, useTransform } from "framer-motion";
-import { Button } from "@/components/ui/button";
 import { ProductCard } from "@/components/ProductCard";
 import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
+import Image from "next/image";
 import { ArrowRight, ArrowUpRight, ChevronLeft, ChevronRight } from "lucide-react";
 import { useEffect, useState, useRef } from "react";
 import { api } from "@/lib/api";
@@ -39,7 +39,6 @@ export default function Home() {
   });
 
   const [currentSlide, setCurrentSlide] = useState(0);
-  const [heroLoaded, setHeroLoaded] = useState(false);
 
   const heroSlides = [
     {
@@ -316,9 +315,9 @@ export default function Home() {
 
           <div className="grid grid-cols-12 gap-4 lg:gap-6">
             {/* Large feature card */}
-            <Link href="/categories/running" className="col-span-12 md:col-span-7 cat-card rounded-2xl" style={{ height: 480 }}>
-              <img src="https://static.nike.com/a/images/w_1920,c_limit/fafd7d08-2216-431b-bc56-f81b1cf7056c/the-best-chunky-sneaker-styles-by-nike.jpg"
-                alt="Running" className="w-full h-full object-cover" style={{ borderRadius: "inherit" }} />
+            <Link href="/categories/running" className="col-span-12 md:col-span-7 cat-card rounded-2xl relative" style={{ height: 480 }}>
+              <Image src="https://static.nike.com/a/images/w_1920,c_limit/fafd7d08-2216-431b-bc56-f81b1cf7056c/the-best-chunky-sneaker-styles-by-nike.jpg"
+                alt="Running" fill className="object-cover" style={{ borderRadius: "inherit" }} />
               <div className="cat-overlay rounded-2xl" />
               <div className="absolute bottom-0 left-0 p-8 z-10">
                 <p className="text-white/60 text-xs uppercase tracking-widest mb-1 font-medium">Category</p>
@@ -328,18 +327,18 @@ export default function Home() {
 
             {/* Small stacked */}
             <div className="col-span-12 md:col-span-5 flex flex-col gap-4 lg:gap-6">
-              <Link href="/categories/lifestyle" className="cat-card rounded-2xl flex-1" style={{ minHeight: 224 }}>
-                <img src="https://media.endclothing.com/end-features/f_auto,q_auto:eco,w_1520/prodfeatures/Z-5owndAxsiBwRJa_18-03-25_NIKEAIRZOOMSPIRIDONSP_hf9117-400__Email_1200x78.jpg?auto=format,compress"
-                  alt="Lifestyle" className="w-full h-full object-cover" style={{ borderRadius: "inherit" }} />
+              <Link href="/categories/lifestyle" className="cat-card rounded-2xl flex-1 relative" style={{ minHeight: 224 }}>
+                <Image src="https://media.endclothing.com/end-features/f_auto,q_auto:eco,w_1520/prodfeatures/Z-5owndAxsiBwRJa_18-03-25_NIKEAIRZOOMSPIRIDONSP_hf9117-400__Email_1200x78.jpg?auto=format,compress"
+                  alt="Lifestyle" fill className="object-cover" style={{ borderRadius: "inherit" }} />
                 <div className="cat-overlay rounded-2xl" />
                 <div className="absolute bottom-0 left-0 p-6 z-10">
                   <p className="text-white/60 text-xs uppercase tracking-widest mb-1 font-medium">Category</p>
                   <h3 className="font-display text-white uppercase text-3xl font-black leading-none">Lifestyle</h3>
                 </div>
               </Link>
-              <Link href="/categories/training" className="cat-card rounded-2xl flex-1" style={{ minHeight: 224 }}>
-                <img src="https://cdn.dribbble.com/userupload/6110032/file/original-a2f2a8b0b923a9abdc7b38fcfff6a160.png?resize=1600x0"
-                  alt="Training" className="w-full h-full object-cover" style={{ borderRadius: "inherit" }} />
+              <Link href="/categories/training" className="cat-card rounded-2xl flex-1 relative" style={{ minHeight: 224 }}>
+                <Image src="https://cdn.dribbble.com/userupload/6110032/file/original-a2f2a8b0b923a9abdc7b38fcfff6a160.png?resize=1600x0"
+                  alt="Training" fill className="object-cover" style={{ borderRadius: "inherit" }} />
                 <div className="cat-overlay rounded-2xl" />
                 <div className="absolute bottom-0 left-0 p-6 z-10">
                   <p className="text-white/60 text-xs uppercase tracking-widest mb-1 font-medium">Category</p>
@@ -402,16 +401,17 @@ export default function Home() {
 
         {/* ── FULL-BLEED EDITORIAL BANNER ────────────────────────── */}
         <section className="relative overflow-hidden" style={{ height: "clamp(380px, 55vw, 620px)" }}>
-          <img
+          <Image
             src="https://cdn.prod.website-files.com/67bc58183fe9a751de6f5611/67f1cedcf33de00b028e41d9_revery-casestudy-nike-speed-revealed-hero.png"
             alt="Editorial"
-            className="absolute inset-0 w-full h-full object-cover"
+            fill
+            className="object-cover"
           />
           <div className="absolute inset-0" style={{ background: "linear-gradient(to right, rgba(10,10,10,.8) 0%, rgba(10,10,10,.1) 70%)" }} />
           <div className="relative z-10 h-full flex items-center px-8 md:px-16 lg:px-24">
             <div style={{ maxWidth: 560 }}>
               <span className="tag" style={{ borderColor: "rgba(255,255,255,.25)", color: "rgba(255,255,255,.7)", marginBottom: 20, display: "inline-block" }}>
-                Editor's Pick
+                Editor&apos;s Pick
               </span>
               <h2 className="font-display text-white uppercase mb-5"
                 style={{ fontSize: "clamp(44px, 6vw, 80px)", fontWeight: 900, lineHeight: 1, letterSpacing: "-.01em" }}>
@@ -469,7 +469,7 @@ export default function Home() {
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Link href="/register">
                 <button className="btn-primary" style={{ fontSize: 14 }}>
-                  Create Account – It's Free <ArrowRight size={15} />
+                  Create Account – It&apos;s Free <ArrowRight size={15} />
                 </button>
               </Link>
               <Link href="/products">
