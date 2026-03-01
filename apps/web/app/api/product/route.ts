@@ -2,9 +2,14 @@ import { NextResponse } from "next/server";
 
 const EXTERNAL_PRODUCTS_URL = "https://api.reyva.co.in/api/products";
 
-export async function GET() {
+export const dynamic = "force-dynamic";
+
+export async function GET(request: Request) {
     try {
-        const res = await fetch(EXTERNAL_PRODUCTS_URL, {
+        const { searchParams } = new URL(request.url);
+        const queryString = searchParams.toString();
+        const url = queryString ? `${EXTERNAL_PRODUCTS_URL}?${queryString}` : EXTERNAL_PRODUCTS_URL;
+        const res = await fetch(url, {
             // Disable Next.js fetch caching so you always get fresh data
             cache: "no-store",
         });

@@ -3,6 +3,7 @@
 import { motion, AnimatePresence, useReducedMotion, useScroll, useTransform } from "framer-motion";
 import { ProductCard } from "@/components/ProductCard";
 import { useQuery } from "@tanstack/react-query";
+import { useCategories } from "@/lib/useCategories";
 import Link from "next/link";
 import Image from "next/image";
 import { ArrowRight, ArrowUpRight, ChevronLeft, ChevronRight } from "lucide-react";
@@ -17,6 +18,17 @@ interface Product {
   price: number;
   image: string;
 }
+
+const CATEGORY_IMAGES: Record<string, string> = {
+  audio: "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?q=80&w=2070&auto=format&fit=crop",
+  "bags-accessories": "https://images.unsplash.com/photo-1553062407-98eeb64c6a62?q=80&w=2070&auto=format&fit=crop",
+  "keyboards-mice": "https://images.unsplash.com/photo-1511467687858-23d96c32e4ae?q=80&w=2070&auto=format&fit=crop",
+  "laptops-computers": "https://images.unsplash.com/photo-1496181133206-80ce9b88a853?q=80&w=2071&auto=format&fit=crop",
+  lifestyle: "https://images.unsplash.com/photo-1523275335684-37898b6baf30?q=80&w=1000&auto=format&fit=crop",
+  photography: "https://images.unsplash.com/photo-1516035069371-29a1b244cc32?q=80&w=2054&auto=format&fit=crop",
+  smartphones: "https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?q=80&w=2080&auto=format&fit=crop",
+  wearables: "https://images.unsplash.com/photo-1523275335684-37898b6baf30?q=80&w=1000&auto=format&fit=crop",
+};
 
 /* ─── Design tokens ──────────────────────────────────────────────────────── */
 // Applied via Tailwind + inline where needed. Tokens:
@@ -99,10 +111,12 @@ export default function Home() {
     fetchSettings();
   }, []);
 
+  const { data: categories = [], isLoading: categoriesLoading } = useCategories();
+
   const { data: products = [], isLoading } = useQuery<Product[]>({
     queryKey: ["home-products"],
     queryFn: async () => {
-      const res = await fetch("/api/products");
+      const res = await fetch("/api/product");
       if (!res.ok) throw new Error("Failed to fetch products");
       const data: {
         products?: { id: string; title: string; description: string; price: number; gallery?: string[] }[];
@@ -309,38 +323,88 @@ export default function Home() {
           </div>
 
           <div className="grid grid-cols-12 gap-4 lg:gap-6">
-            {/* Large feature card */}
-            <Link href="/categories/running" className="col-span-12 md:col-span-7 cat-card rounded-2xl relative" style={{ height: 480 }}>
-              <Image src="https://static.nike.com/a/images/w_1920,c_limit/fafd7d08-2216-431b-bc56-f81b1cf7056c/the-best-chunky-sneaker-styles-by-nike.jpg"
-                alt="Running" fill className="object-cover" style={{ borderRadius: "inherit" }} />
-              <div className="cat-overlay rounded-2xl" />
-              <div className="absolute bottom-0 left-0 p-8 z-10">
-                <p className="text-white/60 text-xs uppercase tracking-widest mb-1 font-medium">Category</p>
-                <h3 className="font-display text-white uppercase text-4xl font-black leading-none">Running</h3>
-              </div>
-            </Link>
+            {categoriesLoading ? (
+              <>
+                <div className="col-span-12 md:col-span-7 rounded-2xl animate-pulse" style={{ height: 480, background: "rgba(10,10,10,.07)" }} />
+                <div className="col-span-12 md:col-span-5 flex flex-col gap-4 lg:gap-6">
+                  <div className="flex-1 rounded-2xl animate-pulse" style={{ minHeight: 224, background: "rgba(10,10,10,.07)" }} />
+                  <div className="flex-1 rounded-2xl animate-pulse" style={{ minHeight: 224, background: "rgba(10,10,10,.07)" }} />
+                </div>
+              </>
+            ) : categories.length >= 3 ? (
+              <>
+                {/* Large feature card - first category */}
+                <Link href={`/products?category=${categories[0].id}`} className="col-span-12 md:col-span-7 cat-card rounded-2xl relative" style={{ height: 480 }}>
+                  <Image
+                    src={CATEGORY_IMAGES[categories[0].slug] ?? "https://images.unsplash.com/photo-1498049794561-7780e7231661?q=80&w=2070&auto=format&fit=crop"}
+                    alt={categories[0].name}
+                    fill
+                    className="object-cover"
+                    style={{ borderRadius: "inherit" }}
+                  />
+                  <div className="cat-overlay rounded-2xl" />
+                  <div className="absolute bottom-0 left-0 p-8 z-10">
+                    <p className="text-white/60 text-xs uppercase tracking-widest mb-1 font-medium">{categories[0]._count?.products ?? 0} Products</p>
+                    <h3 className="font-display text-white uppercase text-4xl font-black leading-none">{categories[0].name}</h3>
+                  </div>
+                </Link>
 
-            {/* Small stacked */}
-            <div className="col-span-12 md:col-span-5 flex flex-col gap-4 lg:gap-6">
-              <Link href="/categories/lifestyle" className="cat-card rounded-2xl flex-1 relative" style={{ minHeight: 224 }}>
-                <Image src="https://media.endclothing.com/end-features/f_auto,q_auto:eco,w_1520/prodfeatures/Z-5owndAxsiBwRJa_18-03-25_NIKEAIRZOOMSPIRIDONSP_hf9117-400__Email_1200x78.jpg?auto=format,compress"
-                  alt="Lifestyle" fill className="object-cover" style={{ borderRadius: "inherit" }} />
-                <div className="cat-overlay rounded-2xl" />
-                <div className="absolute bottom-0 left-0 p-6 z-10">
-                  <p className="text-white/60 text-xs uppercase tracking-widest mb-1 font-medium">Category</p>
-                  <h3 className="font-display text-white uppercase text-3xl font-black leading-none">Lifestyle</h3>
+                {/* Small stacked - second and third categories */}
+                <div className="col-span-12 md:col-span-5 flex flex-col gap-4 lg:gap-6">
+                  <Link href={`/products?category=${categories[1].id}`} className="cat-card rounded-2xl flex-1 relative" style={{ minHeight: 224 }}>
+                    <Image
+                      src={CATEGORY_IMAGES[categories[1].slug] ?? "https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?q=80&w=2080&auto=format&fit=crop"}
+                      alt={categories[1].name}
+                      fill
+                      className="object-cover"
+                      style={{ borderRadius: "inherit" }}
+                    />
+                    <div className="cat-overlay rounded-2xl" />
+                    <div className="absolute bottom-0 left-0 p-6 z-10">
+                      <p className="text-white/60 text-xs uppercase tracking-widest mb-1 font-medium">{categories[1]._count?.products ?? 0} Products</p>
+                      <h3 className="font-display text-white uppercase text-3xl font-black leading-none">{categories[1].name}</h3>
+                    </div>
+                  </Link>
+                  <Link href={`/products?category=${categories[2].id}`} className="cat-card rounded-2xl flex-1 relative" style={{ minHeight: 224 }}>
+                    <Image
+                      src={CATEGORY_IMAGES[categories[2].slug] ?? "https://images.unsplash.com/photo-1523275335684-37898b6baf30?q=80&w=1000&auto=format&fit=crop"}
+                      alt={categories[2].name}
+                      fill
+                      className="object-cover"
+                      style={{ borderRadius: "inherit" }}
+                    />
+                    <div className="cat-overlay rounded-2xl" />
+                    <div className="absolute bottom-0 left-0 p-6 z-10">
+                      <p className="text-white/60 text-xs uppercase tracking-widest mb-1 font-medium">{categories[2]._count?.products ?? 0} Products</p>
+                      <h3 className="font-display text-white uppercase text-3xl font-black leading-none">{categories[2].name}</h3>
+                    </div>
+                  </Link>
                 </div>
-              </Link>
-              <Link href="/categories/training" className="cat-card rounded-2xl flex-1 relative" style={{ minHeight: 224 }}>
-                <Image src="https://cdn.dribbble.com/userupload/6110032/file/original-a2f2a8b0b923a9abdc7b38fcfff6a160.png?resize=1600x0"
-                  alt="Training" fill className="object-cover" style={{ borderRadius: "inherit" }} />
-                <div className="cat-overlay rounded-2xl" />
-                <div className="absolute bottom-0 left-0 p-6 z-10">
-                  <p className="text-white/60 text-xs uppercase tracking-widest mb-1 font-medium">Category</p>
-                  <h3 className="font-display text-white uppercase text-3xl font-black leading-none">Training</h3>
-                </div>
-              </Link>
-            </div>
+              </>
+            ) : categories.length > 0 ? (
+              <div className="col-span-12 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+                {categories.map((cat) => (
+                  <Link key={cat.id} href={`/products?category=${cat.id}`} className="cat-card rounded-2xl relative aspect-[4/3]">
+                    <Image
+                      src={CATEGORY_IMAGES[cat.slug] ?? "https://images.unsplash.com/photo-1498049794561-7780e7231661?q=80&w=2070&auto=format&fit=crop"}
+                      alt={cat.name}
+                      fill
+                      className="object-cover"
+                      style={{ borderRadius: "inherit" }}
+                    />
+                    <div className="cat-overlay rounded-2xl" />
+                    <div className="absolute bottom-0 left-0 p-6 z-10">
+                      <p className="text-white/60 text-xs uppercase tracking-widest mb-1 font-medium">{cat._count?.products ?? 0} Products</p>
+                      <h3 className="font-display text-white uppercase text-xl font-black leading-none">{cat.name}</h3>
+                    </div>
+                  </Link>
+                ))}
+              </div>
+            ) : (
+              <div className="col-span-full py-12 text-center" style={{ color: "var(--mid)" }}>
+                No categories available.
+              </div>
+            )}
           </div>
         </section>
 

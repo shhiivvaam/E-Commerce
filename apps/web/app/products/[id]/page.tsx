@@ -94,7 +94,7 @@ export default function ProductDetailPage({ params }: { params: { id: string } }
   const { data: productsData, isLoading } = useQuery<{ products?: ExternalProduct[] }>({
     queryKey: ["product-detail", params.id],
     queryFn: async () => {
-      const res = await fetch("/api/products");
+      const res = await fetch("/api/product");
       if (!res.ok) throw new Error("Failed to fetch");
       return res.json();
     },
